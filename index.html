@@ -48,12 +48,10 @@ nav{height:var(--tabh);background:var(--sur);display:flex;border-top:1px solid v
 .cs:first-child{padding-top:0}
 
 /* slider */
-.sl-wrap{display:flex;align-items:center;gap:8px}
+.sl-wrap{display:flex;align-items:center;gap:6px}
 .sl-wrap input[type=range]{flex:1;accent-color:var(--g);cursor:pointer}
 .sl-val{font-size:15px;font-weight:700;color:var(--g);min-width:38px;text-align:right;flex-shrink:0}
-/* ticks: padding set by JS to align with thumb center */
-.sl-ticks{display:flex;justify-content:space-between;margin-top:3px}
-.sl-ticks span{font-size:9px;color:var(--txm);line-height:1;flex-shrink:0}
+.sl-min{font-size:11px;color:var(--txm);flex-shrink:0}
 
 /* 3-option */
 .tri{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
@@ -270,6 +268,7 @@ let GIST_ID=LS.get('ht_gid')||'';
 let TOKEN=LS.get('ht_tok')||'';
 let data=null;
 let curDetId=null;
+let slRanges=Object.assign({sleepMin:0,sleepMax:12,wtMin:45,wtMax:60},LS.get('ht_ranges')||{});
 
 // ── setup / settings ────────────────────────────────────────────────
 function saveSetup(){
@@ -280,11 +279,20 @@ function saveSetup(){
   document.getElementById('setup').classList.remove('open');init();
 }
 function openSettings(){
-  openModal('云端同步设置',`
-    <p style="font-size:12px;color:var(--txm);margin-bottom:14px">修改后立即生效并重新拉取数据</p>
+  openModal('设置',`
+    <p style="font-size:11px;font-weight:700;color:var(--txm);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">☁️ 云端同步</p>
+    <p style="font-size:12px;color:var(--txm);margin-bottom:10px">修改后立即生效并重新拉取数据</p>
     <div class="field"><label>Gist ID</label><input type="text" id="sg" value="${esc(GIST_ID)}"/></div>
     <div class="field"><label>PAT Token</label><input type="text" id="st" value="${esc(TOKEN)}"/>
       <div class="s-hint">如果 regenerate 了 token，在这里更新</div></div>
+    <hr style="border:none;border-top:1px solid var(--bdr);margin:14px 0"/>
+    <p style="font-size:11px;font-weight:700;color:var(--txm);letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px">📏 滑块范围</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div class="field"><label>睡眠最小 (h)</label><input type="number" id="sr-smin" value="${slRanges.sleepMin}" min="0" max="11" step="0.5"/></div>
+      <div class="field"><label>睡眠最大 (h)</label><input type="number" id="sr-smax" value="${slRanges.sleepMax}" min="1" max="24" step="0.5"/></div>
+      <div class="field"><label>体重最小 (kg)</label><input type="number" id="sr-wmin" value="${slRanges.wtMin}" min="20" max="200" step="0.5"/></div>
+      <div class="field"><label>体重最大 (kg)</label><input type="number" id="sr-wmax" value="${slRanges.wtMax}" min="20" max="300" step="0.5"/></div>
+    </div>
     <button class="btn btn-p" onclick="applySettings()">保存并重新同步</button>`);
 }
 async function applySettings(){
@@ -292,6 +300,13 @@ async function applySettings(){
   const t=document.getElementById('st').value.trim();
   if(!g||!t){toast('请填写完整');return}
   GIST_ID=g;TOKEN=t;LS.set('ht_gid',g);LS.set('ht_tok',t);
+  const smin=parseFloat(document.getElementById('sr-smin').value)||0;
+  const smax=parseFloat(document.getElementById('sr-smax').value)||12;
+  const wmin=parseFloat(document.getElementById('sr-wmin').value)||45;
+  const wmax=parseFloat(document.getElementById('sr-wmax').value)||60;
+  if(smax<=smin||wmax<=wmin){toast('最大值必须大于最小值');return}
+  slRanges={sleepMin:smin,sleepMax:smax,wtMin:wmin,wtMax:wmax};
+  LS.set('ht_ranges',slRanges);
   closeModal();await fetchGist();renderAll();toast('✅ 设置已更新');
 }
 
@@ -377,19 +392,6 @@ function openModal(title,html){
   document.getElementById('modal').classList.add('open');
 }
 
-// slider tick alignment — JS measures thumb offset per browser
-function alignTicks(){
-  document.querySelectorAll('.sl-ticks[data-for]').forEach(ticks=>{
-    const sl=document.getElementById(ticks.dataset.for);
-    if(!sl)return;
-    // thumb width heuristic: iOS ~22px, Android Chrome ~20px, Desktop ~14px
-    const ua=navigator.userAgent;
-    const tw=/iPhone|iPad|iPod/.test(ua)?22:/Android/.test(ua)?20:14;
-    const half=tw/2;
-    ticks.style.paddingLeft=half+'px';
-    ticks.style.paddingRight=half+'px';
-  });
-}
 
 // ── TAB 1: 今日 ──────────────────────────────────────────────────────
 function renderToday(){
@@ -409,7 +411,8 @@ function renderToday(){
   const sqBtns=[1,2,3].map(v=>`<button class="tb ${log.sleep.quality===v?SLC[v]:''}" onclick="setTri('sq',${v},'sleep.quality')">${SLQ[v]}</button>`).join('');
   const enBtns=[1,2,3].map(v=>`<button class="tb ${log.energy.level===v?ENC[v]:''}" onclick="setTri('en',${v},'energy.level')">${ENL[v]}</button>`).join('');
 
-  const wVal=log.weight!==null?log.weight:52;
+  const wtMid=Math.round((slRanges.wtMin+slRanges.wtMax)/2*2)/2;
+  const wVal=log.weight!==null?Math.max(slRanges.wtMin,Math.min(slRanges.wtMax,log.weight)):wtMid;
   const wDisp=log.weight!==null?log.weight+' kg':'— kg';
 
   const tagChips=data.tagDefs.map(t=>{
@@ -428,19 +431,21 @@ function renderToday(){
     <div class="banner">
       <div><div class="b-big">${months[dt.getMonth()]} ${dt.getDate()}日</div>
         <div class="b-sub">${dt.getFullYear()} · ${days[dt.getDay()]}</div></div>
-      <div class="b-st">${done?'已记录 ✓':'待打卡'}</div>
+      <div>${done
+        ?'<div class="b-st">已记录 ✓</div>'
+        :'<button class="hdr-btn" onclick="saveToday()" style="background:rgba(255,255,255,.25);padding:7px 13px;font-size:13px;font-weight:600">💾 保存记录</button>'
+      }</div>
     </div>
     <div class="card">
       <div class="cs">
         <div class="card-title"><span class="dot" style="background:var(--g)"></span>睡眠时长</div>
         <div class="sl-wrap">
-          <input id="sl-sleep" type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}"
+          <span class="sl-min">${slRanges.sleepMin}h</span>
+          <input id="sl-sleep" type="range" min="${slRanges.sleepMin}" max="${slRanges.sleepMax}" step="0.5" value="${Math.max(slRanges.sleepMin,Math.min(slRanges.sleepMax,log.sleep.hoursSlept))}"
             oninput="document.getElementById('slv').textContent=this.value+'h';setF('sleep.hoursSlept',parseFloat(this.value))"/>
           <span class="sl-val" id="slv">${log.sleep.hoursSlept}h</span>
         </div>
-        <div class="sl-ticks" data-for="sl-sleep">
-          <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span>
-        </div>
+        <div style="text-align:right;font-size:10px;color:var(--txm);margin-top:1px;padding-right:46px">${slRanges.sleepMax}h</div>
       </div>
       <div class="cs">
         <div class="card-title"><span class="dot" style="background:var(--g)"></span>睡眠质量</div>
@@ -453,15 +458,17 @@ function renderToday(){
       <div class="cs">
         <div class="card-title"><span class="dot" style="background:#9c27b0"></span>体重</div>
         <div class="sl-wrap">
-          <input id="sl-wt" type="range" min="45" max="60" step="0.5" value="${wVal}"
+          <span class="sl-min">${slRanges.wtMin}</span>
+          <input id="sl-wt" type="range" min="${slRanges.wtMin}" max="${slRanges.wtMax}" step="0.5" value="${wVal}"
             style="${log.weight===null?'opacity:.35':''}"
             oninput="document.getElementById('wtv').textContent=this.value+' kg';setF('weight',parseFloat(this.value));this.style.opacity='1'"/>
           <span class="sl-val" id="wtv">${wDisp}</span>
         </div>
-        <div class="sl-ticks" data-for="sl-wt">
-          <span>45</span><span>50</span><span>55</span><span>60</span>
+        <div style="display:flex;justify-content:space-between;margin-top:2px;padding-right:46px">
+          <span style="font-size:10px;color:transparent">.</span>
+          <span style="font-size:10px;color:var(--txm)">${slRanges.wtMax} kg</span>
         </div>
-        <button class="btn btn-sm btn-s" style="margin-top:7px;font-size:11px" onclick="clearWt()">清除体重</button>
+        <button class="btn btn-sm btn-s" style="margin-top:5px;font-size:11px" onclick="clearWt()">清除体重</button>
       </div>
       <div class="cs">
         <div class="card-title"><span class="dot" style="background:var(--b)"></span>今日标签</div>
@@ -474,9 +481,7 @@ function renderToday(){
     ${data.supplements.length?`<div class="card">
       <div class="card-title"><span class="dot" style="background:var(--b)"></span>今日补剂</div>
       <div class="sl-list">${suppRows}</div></div>`
-    :`<div class="card"><div class="sl-list">${suppRows}</div></div>`}
-    <button class="btn btn-p" onclick="saveToday()">💾 保存今日记录</button>`;
-  alignTicks();
+    :`<div class="card"><div class="sl-list">${suppRows}</div></div>`}`;
 }
 
 function setTri(gId,val,field){
@@ -584,21 +589,19 @@ function openAddPastLog(){
       <input type="date" id="pl-date" value="${def}" max="${today()}"/></div>
     <div class="field"><label>睡眠时长</label>
       <div class="sl-wrap">
-        <input id="sl-pl" type="range" min="0" max="12" step="0.5" value="7"
+        <span class="sl-min">${slRanges.sleepMin}h</span>
+        <input id="sl-pl" type="range" min="${slRanges.sleepMin}" max="${slRanges.sleepMax}" step="0.5" value="7"
           oninput="document.getElementById('pl-slv').textContent=this.value+'h'"/>
         <span class="sl-val" id="pl-slv">7h</span>
       </div>
-      <div class="sl-ticks" data-for="sl-pl">
-        <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span>
-      </div></div>
+      <div style="text-align:right;font-size:10px;color:var(--txm);padding-right:46px">${slRanges.sleepMax}h</div></div>
     <div class="field"><label>睡眠质量</label><div class="tri" id="pl-sq">${sqBtns}</div></div>
     <div class="field"><label>精力</label><div class="tri" id="pl-en">${enBtns}</div></div>
     <div class="field"><label>体重（可选）</label>
-      <input type="number" id="pl-wt" step="0.5" min="45" max="60" placeholder="留空则不记录"/></div>
+      <input type="number" id="pl-wt" step="0.5" min="${slRanges.wtMin}" max="${slRanges.wtMax}" placeholder="留空则不记录"/></div>
     ${tagChips?`<div class="field"><label>标签</label><div class="tag-cloud">${tagChips}</div></div>`:''}
     ${suppRows?`<div class="field"><label>补剂</label><div class="sl-list">${suppRows}</div></div>`:''}
     <button class="btn btn-p" onclick="submitPastLog()">保存历史日志</button>`);
-  setTimeout(alignTicks,50);
 }
 
 let _plSQ=0,_plEN=0,_plTags=[];
@@ -681,21 +684,19 @@ function openEditLog(log){
   openModal(`编辑 · ${log.date}`,`
     <div class="field"><label>睡眠时长</label>
       <div class="sl-wrap">
-        <input id="el-sl" type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}"
+        <span class="sl-min">${slRanges.sleepMin}h</span>
+        <input id="el-sl" type="range" min="${slRanges.sleepMin}" max="${slRanges.sleepMax}" step="0.5" value="${Math.max(slRanges.sleepMin,Math.min(slRanges.sleepMax,log.sleep.hoursSlept))}"
           oninput="document.getElementById('el-slv').textContent=this.value+'h'"/>
         <span class="sl-val" id="el-slv">${log.sleep.hoursSlept}h</span>
       </div>
-      <div class="sl-ticks" data-for="el-sl">
-        <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span>
-      </div></div>
+      <div style="text-align:right;font-size:10px;color:var(--txm);padding-right:46px">${slRanges.sleepMax}h</div></div>
     <div class="field"><label>睡眠质量</label><div class="tri" id="esq">${sqBtns}</div></div>
     <div class="field"><label>精力</label><div class="tri" id="een">${enBtns}</div></div>
     <div class="field"><label>体重（kg）</label>
-      <input type="number" id="el-wt" step="0.5" min="45" max="60" value="${log.weight||''}" placeholder="留空则不记录"/></div>
+      <input type="number" id="el-wt" step="0.5" min="${slRanges.wtMin}" max="${slRanges.wtMax}" value="${log.weight||''}" placeholder="留空则不记录"/></div>
     ${tagChips?`<div class="field"><label>标签</label><div class="tag-cloud">${tagChips}</div></div>`:''}
     ${suppRows?`<div class="field"><label>补剂</label><div class="sl-list">${suppRows}</div></div>`:''}
     <button class="btn btn-p" onclick="saveEditLog(${log.id})">保存修改</button>`);
-  setTimeout(alignTicks,50);
 }
 function setELTri(gId,val,which){
   const g=document.getElementById(gId);if(!g)return;
