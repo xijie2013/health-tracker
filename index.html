@@ -30,10 +30,11 @@
     --radius:      14px;
     --tab-h:       58px;
     --header-h:    52px;
+    --thumb:       18px; /* slider thumb width — used for tick offset */
   }
   html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
 
-  /* Layout */
+  /* ── Layout ── */
   #app { display: flex; flex-direction: column; height: 100vh; max-width: 600px; margin: 0 auto; background: var(--bg); }
   header { height: var(--header-h); background: var(--green); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; flex-shrink: 0; }
   header h1 { color: #fff; font-size: 17px; font-weight: 600; }
@@ -44,24 +45,74 @@
   #sync-status.syncing { background: #ffc107; animation: pulse 1s infinite; }
   #sync-status.error { background: #f44336; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
   #content { flex: 1; overflow-y: auto; padding-bottom: calc(var(--tab-h) + 4px); }
-
   nav { height: var(--tab-h); background: var(--surface); display: flex; border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; z-index: 100; }
   .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: none; background: none; color: var(--text-muted); font-size: 10px; cursor: pointer; transition: color .15s; }
   .tab-btn .icon { font-size: 21px; line-height: 1; }
   .tab-btn.active { color: var(--green); }
-
-  /* Tab Panels */
   .tab-panel { display: none; padding: 12px; }
   .tab-panel.active { display: block; }
 
-  /* Cards */
-  .card { background: var(--surface); border-radius: var(--radius); padding: 14px 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  /* ── Cards ── */
+  .card { background: var(--surface); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
   .card-title { font-size: 12px; font-weight: 600; color: var(--text-muted); letter-spacing: .4px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; }
-  .card-title .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+  .card-title .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .card-section { padding: 10px 0; border-bottom: 1px solid var(--bg); }
+  .card-section:last-child { border-bottom: none; padding-bottom: 0; }
+  .card-section:first-child { padding-top: 0; }
 
-  /* Form */
+  /* ── Slider (aligned ticks) ── */
+  .slider-wrap { display: flex; align-items: center; gap: 10px; }
+  .slider-wrap input[type=range] { flex: 1; accent-color: var(--green); cursor: pointer; }
+  .slider-val { min-width: 36px; font-size: 16px; font-weight: 700; color: var(--green); text-align: right; flex-shrink: 0; }
+  /*
+   * Tick labels: offset by calc(var(--thumb)/2) so first and last labels
+   * align with thumb-center at min and max positions.
+   */
+  .slider-ticks {
+    display: flex; justify-content: space-between;
+    padding: 3px calc(var(--thumb)/2) 0;
+    margin-top: 1px;
+  }
+  .slider-ticks span { font-size: 10px; color: var(--text-muted); line-height: 1; }
+
+  /* ── 3-option picker ── */
+  .tri-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .tri-btn { padding: 10px 4px; border: 2px solid var(--border); border-radius: 10px; background: #fff; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; text-align: center; transition: all .15s; user-select: none; }
+  .tri-btn:active { transform: scale(.96); }
+  .tri-btn.sel-bad  { border-color: var(--red);    background: var(--red-light);    color: var(--red); }
+  .tri-btn.sel-ok   { border-color: var(--orange);  background: var(--orange-light); color: var(--orange); }
+  .tri-btn.sel-good { border-color: var(--green);   background: var(--green-light);  color: var(--green); }
+
+  /* ── Tag chips ── */
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 7px 13px; border-radius: 20px;
+    border: 2px solid var(--border); background: #fff;
+    font-size: 13px; font-weight: 500; color: var(--text-muted);
+    cursor: pointer; user-select: none; transition: all .15s;
+  }
+  .tag-chip:active { transform: scale(.95); }
+  .tag-chip.active { color: #fff; border-color: transparent; }
+  .tag-chip-add {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 7px 13px; border-radius: 20px;
+    border: 2px dashed var(--border); background: transparent;
+    font-size: 13px; color: var(--text-muted); cursor: pointer;
+    transition: all .15s;
+  }
+  .tag-chip-add:active { background: var(--green-light); border-color: var(--green); color: var(--green); }
+
+  /* ── General buttons ── */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .1s; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--green); color: #fff; width: 100%; }
+  .btn-secondary { background: var(--green-light); color: var(--green); }
+  .btn-danger { background: var(--red-light); color: var(--red); }
+  .btn-sm { padding: 5px 11px; font-size: 13px; border-radius: 8px; }
+
+  /* ── Form elements ── */
   label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
   input[type=text], input[type=number], input[type=date], textarea, select {
     width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 10px;
@@ -71,30 +122,7 @@
   textarea { resize: vertical; min-height: 64px; }
   .field { margin-bottom: 12px; }
 
-  /* Slider */
-  .slider-wrap { display: flex; align-items: center; gap: 10px; }
-  .slider-wrap input[type=range] { flex: 1; accent-color: var(--green); height: 4px; }
-  .slider-val { min-width: 28px; font-size: 16px; font-weight: 700; color: var(--green); text-align: center; }
-
-  /* === 3-option picker === */
-  .tri-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-  .tri-btn { padding: 10px 4px; border: 2px solid var(--border); border-radius: 10px; background: #fff;
-    font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; text-align: center;
-    transition: all .15s; user-select: none; }
-  .tri-btn:active { transform: scale(.96); }
-  .tri-btn.sel-bad   { border-color: var(--red);    background: var(--red-light);    color: var(--red); }
-  .tri-btn.sel-ok    { border-color: var(--orange);  background: var(--orange-light); color: var(--orange); }
-  .tri-btn.sel-good  { border-color: var(--green);   background: var(--green-light);  color: var(--green); }
-
-  /* Buttons */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .1s; }
-  .btn:active { transform: scale(.97); }
-  .btn-primary { background: var(--green); color: #fff; width: 100%; }
-  .btn-secondary { background: var(--green-light); color: var(--green); }
-  .btn-danger { background: var(--red-light); color: var(--red); }
-  .btn-sm { padding: 5px 11px; font-size: 13px; border-radius: 8px; }
-
-  /* Supplement checkboxes */
+  /* ── Supplement checkboxes ── */
   .supp-list { display: flex; flex-direction: column; gap: 8px; }
   .supp-item { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 10px; background: var(--bg); cursor: pointer; transition: background .12s; user-select: none; }
   .supp-item.checked { background: var(--green-light); }
@@ -107,17 +135,17 @@
   .supp-dose { font-size: 12px; color: var(--text-muted); }
   .supp-cat { font-size: 11px; padding: 2px 7px; border-radius: 9px; background: var(--blue-light); color: var(--blue); flex-shrink: 0; }
 
-  /* Log list */
+  /* ── Log list ── */
   .log-item { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 9px; box-shadow: var(--shadow); cursor: pointer; }
   .log-date { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
   .log-date small { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 6px; }
-  .log-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+  .log-meta { display: flex; gap: 7px; flex-wrap: wrap; }
   .log-tag { font-size: 12px; padding: 3px 9px; border-radius: 8px; }
-  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-green  { background: var(--green-light); color: var(--green); }
   .tag-orange { background: var(--orange-light); color: var(--orange); }
-  .tag-blue { background: var(--blue-light); color: var(--blue); }
+  .tag-blue   { background: var(--blue-light); color: var(--blue); }
 
-  /* Lab cards */
+  /* ── Lab cards ── */
   .lab-card { background: var(--surface); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
   .lab-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
   .lab-date { font-size: 15px; font-weight: 600; }
@@ -135,7 +163,7 @@
   .lab-marker-row { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; }
   .lab-marker-name { font-size: 14px; font-weight: 600; min-width: 76px; }
 
-  /* Supplement management */
+  /* ── Supplement management ── */
   .supp-mgmt-item { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
   .supp-mgmt-item:last-child { border-bottom: none; }
   .supp-mgmt-info { flex: 1; min-width: 0; }
@@ -143,7 +171,7 @@
   .supp-mgmt-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .supp-mgmt-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
-  /* Modal */
+  /* ── Modal ── */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: flex-end; justify-content: center; }
   .modal-overlay.open { display: flex; }
   .modal { background: var(--surface); border-radius: 20px 20px 0 0; padding: 22px 18px 30px; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; animation: slideUp .22s ease; }
@@ -151,7 +179,7 @@
   .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
   .modal-close { font-size: 22px; color: var(--text-muted); background: none; border: none; cursor: pointer; }
 
-  /* Setup screen */
+  /* ── Setup ── */
   #setup-overlay { display: none; position: fixed; inset: 0; background: var(--green); z-index: 300; flex-direction: column; align-items: center; justify-content: center; padding: 32px 22px; }
   #setup-overlay.open { display: flex; }
   .setup-logo { font-size: 60px; margin-bottom: 14px; }
@@ -161,7 +189,7 @@
   .setup-box label { color: var(--text); font-size: 14px; font-weight: 500; }
   .setup-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
 
-  /* Detail overlay */
+  /* ── Detail overlay ── */
   #detail-overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 150; overflow-y: auto; }
   #detail-overlay.open { display: block; }
   .detail-header { position: sticky; top: 0; background: var(--green); color: #fff; padding: 13px 14px; display: flex; align-items: center; gap: 12px; z-index: 10; }
@@ -169,56 +197,30 @@
   .detail-header h2 { font-size: 16px; font-weight: 600; flex: 1; }
   .detail-content { padding: 14px; }
 
-  /* Trend rows */
+  /* ── Trend rows ── */
   .trend-row { display: flex; justify-content: space-between; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--border); }
   .trend-row:last-child { border-bottom: none; }
   .trend-label { color: var(--text-muted); }
   .trend-val { font-weight: 600; }
 
-  /* Date banner — compact */
+  /* ── Date banner ── */
   .date-banner { background: linear-gradient(135deg, var(--green), var(--green-mid)); border-radius: var(--radius); padding: 13px 14px; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
   .date-big { font-size: 20px; font-weight: 700; }
   .date-sub { font-size: 12px; opacity: .8; margin-top: 1px; }
   .date-status { font-size: 12px; opacity: .9; }
 
-  /* Empty states */
+  /* ── Empty states ── */
   .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
   .empty .empty-icon { font-size: 44px; margin-bottom: 10px; }
   .empty p { font-size: 14px; line-height: 1.6; }
 
-  /* Toast */
+  /* ── Toast ── */
   #toast { position: fixed; bottom: calc(var(--tab-h) + 14px); left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 9px 18px; border-radius: 18px; font-size: 14px; z-index: 500; opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap; }
   #toast.show { opacity: 1; }
 
-  /* Scrollbar */
+  /* ── Scrollbar ── */
   #content::-webkit-scrollbar { width: 3px; }
   #content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  /* Section divider inside card */
-  .card-section { padding: 10px 0; border-bottom: 1px solid var(--bg); }
-  .card-section:last-child { border-bottom: none; padding-bottom: 0; }
-  .card-section-label { font-size: 13px; color: var(--text-muted); margin-bottom: 7px; }
-
-  /* Slider tick labels */
-  .slider-ticks { display: flex; justify-content: space-between; padding: 2px 2px 0; }
-  .slider-ticks span { font-size: 10px; color: var(--text-muted); }
-
-  /* 2-option yes/no picker */
-  .duo-group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .duo-btn { padding: 9px 4px; border: 2px solid var(--border); border-radius: 10px; background: #fff;
-    font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; text-align: center;
-    transition: all .15s; user-select: none; }
-  .duo-btn:active { transform: scale(.96); }
-  .duo-btn.sel-yes { border-color: var(--green); background: var(--green-light); color: var(--green); }
-  .duo-btn.sel-no  { border-color: var(--border); background: var(--bg); color: var(--text-muted); }
-
-  /* Weight input row */
-  .weight-row { display: flex; align-items: center; gap: 8px; }
-  .weight-row input { width: 90px; text-align: center; font-size: 18px; font-weight: 700; padding: 8px; }
-  .weight-unit { font-size: 14px; color: var(--text-muted); font-weight: 500; }
-
-  /* Period dot */
-  .period-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #e91e63; margin-right: 4px; }
 </style>
 </head>
 <body>
@@ -243,7 +245,7 @@
   </div>
 </div>
 
-<!-- Main App -->
+<!-- App -->
 <div id="app">
   <header>
     <h1>🌿 健康追踪</h1>
@@ -252,17 +254,15 @@
         <span id="sync-status"></span>
         <span id="sync-label">同步</span>
       </button>
-      <button class="hdr-btn" onclick="openSettings()" title="云端设置">⚙️</button>
+      <button class="hdr-btn" onclick="openSettings()">⚙️</button>
     </div>
   </header>
-
   <div id="content">
     <div class="tab-panel active" id="panel-today"><div id="today-content"></div></div>
     <div class="tab-panel" id="panel-logs"><div id="logs-content"></div></div>
     <div class="tab-panel" id="panel-lab"><div id="lab-content"></div></div>
     <div class="tab-panel" id="panel-supps"><div id="supps-content"></div></div>
   </div>
-
   <nav>
     <button class="tab-btn active" onclick="switchTab('today',this)"><span class="icon">☀️</span>今日</button>
     <button class="tab-btn" onclick="switchTab('logs',this)"><span class="icon">📋</span>日志</button>
@@ -295,25 +295,29 @@
 <div id="toast"></div>
 
 <script>
-// ── Data Layer ──────────────────────────────────────────────────────
+// ── Constants ───────────────────────────────────────────────────────
 const LS = {
   get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
 };
+const SLEEP_LABELS  = { 1:'很差', 2:'一般', 3:'非常不错' };
+const SLEEP_CLASSES = { 1:'sel-bad', 2:'sel-ok', 3:'sel-good' };
+const ENERGY_LABELS  = { 1:'萎靡', 2:'一般', 3:'充沛' };
+const ENERGY_CLASSES = { 1:'sel-bad', 2:'sel-ok', 3:'sel-good' };
+
+// Default system tags
+const DEFAULT_TAGS = [
+  { id: 1, name: '经期',       icon: '🔴', color: '#e91e63' },
+  { id: 2, name: '16:8 断食',  icon: '⏰', color: '#1a73e8' },
+  { id: 3, name: '运动 10min', icon: '🏃', color: '#e67e22' },
+];
 
 let GIST_ID = LS.get('ht_gist_id') || '';
 let TOKEN   = LS.get('ht_token')   || '';
 let data = null;
 let currentDetailId = null;
 
-// Sleep quality labels (stored as 1/2/3)
-const SLEEP_LABELS  = { 1:'很差', 2:'一般', 3:'非常不错' };
-const SLEEP_CLASSES = { 1:'sel-bad', 2:'sel-ok', 3:'sel-good' };
-// Energy labels
-const ENERGY_LABELS  = { 1:'萎靡', 2:'一般', 3:'充沛' };
-const ENERGY_CLASSES = { 1:'sel-bad', 2:'sel-ok', 3:'sel-good' };
-
-// ── Setup ───────────────────────────────────────────────────────────
+// ── Setup / Settings ────────────────────────────────────────────────
 function needsSetup() { return !GIST_ID || !TOKEN; }
 
 function saveSetup() {
@@ -321,8 +325,7 @@ function saveSetup() {
   const tok = document.getElementById('setup-token').value.trim();
   if (!gid || !tok) { alert('请填写 Gist ID 和 Token'); return; }
   GIST_ID = gid; TOKEN = tok;
-  LS.set('ht_gist_id', GIST_ID);
-  LS.set('ht_token', TOKEN);
+  LS.set('ht_gist_id', GIST_ID); LS.set('ht_token', TOKEN);
   document.getElementById('setup-overlay').classList.remove('open');
   init();
 }
@@ -331,10 +334,9 @@ function openSettings() {
   openModal('云端同步设置', `
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">修改后立即生效，重新拉取数据。</p>
     <div class="field"><label>GitHub Gist ID</label>
-      <input type="text" id="s-gid" value="${escHtml(GIST_ID)}" placeholder="Gist hash" />
-    </div>
+      <input type="text" id="s-gid" value="${escHtml(GIST_ID)}" /></div>
     <div class="field"><label>GitHub PAT Token</label>
-      <input type="text" id="s-tok" value="${escHtml(TOKEN)}" placeholder="ghp_xxxx" />
+      <input type="text" id="s-tok" value="${escHtml(TOKEN)}" />
       <div class="setup-hint">如果 token 过期或 regenerate 了，在这里更新</div>
     </div>
     <button class="btn btn-primary" onclick="applySettings()">保存并重新同步</button>
@@ -346,12 +348,9 @@ async function applySettings() {
   const tok = document.getElementById('s-tok').value.trim();
   if (!gid || !tok) { toast('请填写完整'); return; }
   GIST_ID = gid; TOKEN = tok;
-  LS.set('ht_gist_id', GIST_ID);
-  LS.set('ht_token', TOKEN);
+  LS.set('ht_gist_id', GIST_ID); LS.set('ht_token', TOKEN);
   closeModal();
-  await fetchGist();
-  renderAll();
-  toast('✅ 设置已更新');
+  await fetchGist(); renderAll(); toast('✅ 设置已更新');
 }
 
 // ── Gist API ────────────────────────────────────────────────────────
@@ -367,14 +366,12 @@ async function fetchGist() {
     if (!content) throw new Error('health-data.json 不存在');
     data = JSON.parse(content);
     LS.set('ht_cache', data);
-    setSyncStatus('ok');
-    return true;
+    setSyncStatus('ok'); return true;
   } catch(e) {
     setSyncStatus('error');
     const cached = LS.get('ht_cache');
     if (cached) { data = cached; toast('⚠️ 离线模式（使用缓存）'); return true; }
-    toast('❌ ' + e.message);
-    return false;
+    toast('❌ ' + e.message); return false;
   }
 }
 
@@ -389,13 +386,9 @@ async function patchGist() {
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     LS.set('ht_cache', data);
-    setSyncStatus('ok');
-    toast('✅ 已保存');
-    return true;
+    setSyncStatus('ok'); toast('✅ 已保存'); return true;
   } catch(e) {
-    setSyncStatus('error');
-    toast('❌ 保存失败：' + e.message);
-    return false;
+    setSyncStatus('error'); toast('❌ 保存失败：' + e.message); return false;
   }
 }
 
@@ -403,7 +396,6 @@ function setSyncStatus(s) {
   document.getElementById('sync-status').className = s;
   document.getElementById('sync-label').textContent = s === 'syncing' ? '同步中' : s === 'error' ? '失败' : '已同步';
 }
-
 async function syncNow() { await fetchGist(); renderAll(); }
 
 // ── Init ─────────────────────────────────────────────────────────────
@@ -412,11 +404,20 @@ async function init() {
   const ok = await fetchGist();
   if (!ok) return;
   if (!data) data = emptyData();
+  ensureTagDefs();
   renderAll();
 }
 
 function emptyData() {
-  return { version:1, exportedAt: new Date().toISOString(), nextLogId:1, nextLabId:1, supplements:[], dailyLogs:[], labResults:[] };
+  return { version:1, exportedAt: new Date().toISOString(),
+    nextLogId:1, nextLabId:1, nextTagId:10,
+    tagDefs: [...DEFAULT_TAGS],
+    supplements:[], dailyLogs:[], labResults:[] };
+}
+
+function ensureTagDefs() {
+  if (!data.tagDefs) data.tagDefs = [...DEFAULT_TAGS];
+  if (!data.nextTagId) data.nextTagId = Math.max(...data.tagDefs.map(t=>t.id), 9) + 1;
 }
 
 function renderAll() { renderToday(); renderLogs(); renderLab(); renderSupps(); }
@@ -465,21 +466,17 @@ function renderToday() {
       sleep: { hoursSlept: 7, quality: 0 },
       energy: { level: 0 },
       weight: null,
-      period: null,
-      fasting16: null,
-      exercise: null,
+      tags: [],
       supplements: {} };
     data.dailyLogs.push(log);
   }
-  // backfill missing fields for old logs
-  if (log.period   === undefined) log.period   = null;
-  if (log.fasting16=== undefined) log.fasting16= null;
-  if (log.exercise === undefined) log.exercise = null;
-  if (log.weight   === undefined) log.weight   = null;
+  // backfill
+  if (!log.tags) log.tags = [];
+  if (log.weight === undefined) log.weight = null;
 
   const dt = new Date();
   const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  const days = ['周日','周一','周二','周三','周四','周五','周六'];
+  const days   = ['周日','周一','周二','周三','周四','周五','周六'];
   const recorded = log.sleep.quality > 0 && log.energy.level > 0;
 
   // Sleep quality buttons
@@ -492,6 +489,18 @@ function renderToday() {
   const enBtns = [1,2,3].map(v => {
     const sel = log.energy.level === v ? ENERGY_CLASSES[v] : '';
     return `<button class="tri-btn ${sel}" onclick="setTri('energy-l',${v},'energy.level')">${ENERGY_LABELS[v]}</button>`;
+  }).join('');
+
+  // Weight slider: range 40–120, step 1
+  const wVal = log.weight !== null ? log.weight : 60;
+  const wDisplay = log.weight !== null ? log.weight + ' kg' : '— kg';
+
+  // Tag chips
+  const tagChips = data.tagDefs.map(t => {
+    const active = log.tags.includes(t.id);
+    const style = active ? `background:${t.color};` : '';
+    return `<span class="tag-chip ${active ? 'active' : ''}" style="${style}"
+      onclick="toggleTag(${t.id})">${t.icon} ${escHtml(t.name)}</span>`;
   }).join('');
 
   // Supplements
@@ -507,16 +516,6 @@ function renderToday() {
     </div>`;
   }).join('') || `<p style="color:var(--text-muted);font-size:13px;">还没有补剂 → 去「补剂」标签添加</p>`;
 
-  // yes/no button builders
-  function duoBtns(groupId, field, val) {
-    const ysel = val === true  ? 'sel-yes' : '';
-    const nsel = val === false ? 'sel-no'  : '';
-    return `<div class="duo-group" id="${groupId}">
-      <button class="duo-btn ${ysel}" onclick="setDuo('${groupId}',true,'${field}')">✓ 是</button>
-      <button class="duo-btn ${nsel}" onclick="setDuo('${groupId}',false,'${field}')">✗ 否</button>
-    </div>`;
-  }
-
   document.getElementById('today-content').innerHTML = `
     <div class="date-banner">
       <div>
@@ -528,10 +527,10 @@ function renderToday() {
 
     <div class="card">
       <div class="card-section">
-        <div class="card-title"><span class="dot"></span>睡眠时长</div>
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>睡眠时长</div>
         <div class="slider-wrap">
           <input type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}"
-            oninput="updateSlider(this,'sl-val'); setField('sleep.hoursSlept', parseFloat(this.value))" />
+            oninput="updateSleepSlider(this)" />
           <span class="slider-val" id="sl-val">${log.sleep.hoursSlept}h</span>
         </div>
         <div class="slider-ticks">
@@ -539,7 +538,7 @@ function renderToday() {
         </div>
       </div>
       <div class="card-section">
-        <div class="card-title"><span class="dot"></span>睡眠质量</div>
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>睡眠质量</div>
         <div class="tri-group" id="sleep-q">${sqBtns}</div>
       </div>
       <div class="card-section">
@@ -548,24 +547,25 @@ function renderToday() {
       </div>
       <div class="card-section">
         <div class="card-title"><span class="dot" style="background:#9c27b0"></span>体重</div>
-        <div class="weight-row">
-          <input type="number" step="0.1" min="30" max="200" placeholder="—"
-            value="${log.weight !== null ? log.weight : ''}"
-            oninput="setField('weight', this.value ? parseFloat(this.value) : null)" />
-          <span class="weight-unit">kg</span>
+        <div class="slider-wrap">
+          <input type="range" min="40" max="120" step="0.5" value="${wVal}"
+            oninput="updateWeightSlider(this)"
+            ${log.weight === null ? 'style="opacity:.4"' : ''} id="w-slider"/>
+          <span class="slider-val" id="w-val">${wDisplay}</span>
+        </div>
+        <div class="slider-ticks">
+          <span>40</span><span>50</span><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span><span>110</span><span>120</span>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn btn-sm btn-secondary" style="font-size:12px;padding:5px 10px;" onclick="clearWeight()">清除体重</button>
         </div>
       </div>
       <div class="card-section">
-        <div class="card-title"><span class="period-dot"></span>今日经期</div>
-        ${duoBtns('period-g', 'period', log.period)}
-      </div>
-      <div class="card-section">
-        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>16:8 轻断食</div>
-        ${duoBtns('fasting-g', 'fasting16', log.fasting16)}
-      </div>
-      <div class="card-section">
-        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>运动 ≥ 10 分钟</div>
-        ${duoBtns('exercise-g', 'exercise', log.exercise)}
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>今日标签</div>
+        <div class="tag-cloud" id="tag-cloud">
+          ${tagChips}
+          <span class="tag-chip-add" onclick="openAddTag()">＋ 新增</span>
+        </div>
       </div>
     </div>
 
@@ -577,10 +577,29 @@ function renderToday() {
 
     <button class="btn btn-primary" onclick="saveToday()">💾 保存今日记录</button>
   `;
+
+  // Activate weight slider on first interaction if null
+  document.getElementById('w-slider').addEventListener('input', function() {
+    this.style.opacity = '1';
+  }, { once: true });
 }
 
-function updateSlider(el, valId) {
-  document.getElementById(valId).textContent = el.value + 'h';
+function updateSleepSlider(el) {
+  document.getElementById('sl-val').textContent = el.value + 'h';
+  setField('sleep.hoursSlept', parseFloat(el.value));
+}
+
+function updateWeightSlider(el) {
+  const v = parseFloat(el.value);
+  document.getElementById('w-val').textContent = v + ' kg';
+  setField('weight', v);
+}
+
+function clearWeight() {
+  setField('weight', null);
+  const sl = document.getElementById('w-slider');
+  if (sl) { sl.style.opacity = '.4'; }
+  document.getElementById('w-val').textContent = '— kg';
 }
 
 function setTri(groupId, val, field) {
@@ -589,31 +608,83 @@ function setTri(groupId, val, field) {
   const isEnergy = field.startsWith('energy');
   const classes = isEnergy ? ENERGY_CLASSES : SLEEP_CLASSES;
   container.querySelectorAll('.tri-btn').forEach((btn, i) => {
-    const v = i + 1;
-    btn.className = 'tri-btn' + (v === val ? ' ' + classes[v] : '');
+    btn.className = 'tri-btn' + (i+1 === val ? ' ' + classes[i+1] : '');
   });
   setField(field, val);
 }
 
 function setField(field, val) {
-  const todayStr = today();
-  const log = data.dailyLogs.find(l => l.date === todayStr);
+  const log = data.dailyLogs.find(l => l.date === today());
   if (!log) return;
   const parts = field.split('.');
   if (parts.length === 2) log[parts[0]][parts[1]] = val;
   else log[field] = val;
 }
 
-function setDuo(groupId, val, field) {
-  const container = document.getElementById(groupId);
-  if (!container) return;
-  container.querySelectorAll('.duo-btn').forEach(btn => {
-    btn.className = 'duo-btn';
+// ── Tag toggling ─────────────────────────────────────────────────────
+function toggleTag(tagId) {
+  const log = data.dailyLogs.find(l => l.date === today());
+  if (!log) return;
+  if (!log.tags) log.tags = [];
+  const idx = log.tags.indexOf(tagId);
+  if (idx >= 0) log.tags.splice(idx, 1);
+  else log.tags.push(tagId);
+  // update chip UI without full re-render
+  const tagDef = data.tagDefs.find(t => t.id === tagId);
+  if (!tagDef) return;
+  document.querySelectorAll('#tag-cloud .tag-chip').forEach(chip => {
+    if (chip.onclick && chip.onclick.toString().includes(`toggleTag(${tagId})`)) {
+      const active = log.tags.includes(tagId);
+      chip.className = 'tag-chip' + (active ? ' active' : '');
+      chip.style.background = active ? tagDef.color : '';
+    }
   });
-  const [yBtn, nBtn] = container.querySelectorAll('.duo-btn');
-  if (val === true)  yBtn.classList.add('sel-yes');
-  if (val === false) nBtn.classList.add('sel-no');
-  setField(field, val);
+}
+
+function openAddTag() {
+  openModal('新增自定义标签', `
+    <div class="field"><label>标签名称</label>
+      <input type="text" id="new-tag-name" placeholder="例：冥想、高压日、头痛…" maxlength="12" />
+    </div>
+    <div class="field"><label>图标（可选，粘贴一个 emoji）</label>
+      <input type="text" id="new-tag-icon" placeholder="🌟" maxlength="4" />
+    </div>
+    <div class="field"><label>颜色</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="color-picker">
+        ${['#2d7d55','#1a73e8','#e67e22','#e91e63','#9c27b0','#795548','#607d8b','#f44336'].map(c =>
+          `<div style="width:32px;height:32px;border-radius:50%;background:${c};cursor:pointer;border:3px solid transparent;"
+            onclick="selectColor('${c}',this)" data-color="${c}"></div>`
+        ).join('')}
+      </div>
+      <input type="hidden" id="new-tag-color" value="#2d7d55" />
+    </div>
+    <button class="btn btn-primary" onclick="submitAddTag()">添加标签</button>
+  `);
+  // select first color
+  setTimeout(() => {
+    const first = document.querySelector('#color-picker div');
+    if (first) first.style.borderColor = '#fff';
+  }, 50);
+}
+
+function selectColor(color, el) {
+  document.querySelectorAll('#color-picker div').forEach(d => d.style.borderColor = 'transparent');
+  el.style.borderColor = '#fff';
+  document.getElementById('new-tag-color').value = color;
+}
+
+function submitAddTag() {
+  const name  = document.getElementById('new-tag-name').value.trim();
+  if (!name) { toast('请填写标签名称'); return; }
+  const icon  = document.getElementById('new-tag-icon').value.trim() || '🏷️';
+  const color = document.getElementById('new-tag-color').value || '#607d8b';
+  const newTag = { id: data.nextTagId++, name, icon, color };
+  data.tagDefs.push(newTag);
+  // also add to today's log
+  const log = data.dailyLogs.find(l => l.date === today());
+  if (log) { if (!log.tags) log.tags = []; log.tags.push(newTag.id); }
+  closeModal();
+  renderToday();
 }
 
 function toggleSupp(id, el) {
@@ -627,11 +698,9 @@ function toggleSupp(id, el) {
 async function saveToday() {
   const log = data.dailyLogs.find(l => l.date === today());
   if (log && (log.sleep.quality === 0 || log.energy.level === 0)) {
-    toast('请选择睡眠质量和精力状态');
-    return;
+    toast('请选择睡眠质量和精力状态'); return;
   }
-  await patchGist();
-  renderToday();
+  await patchGist(); renderToday();
 }
 
 // ── TAB 2 — 日志历史 ──────────────────────────────────────────────────
@@ -648,15 +717,17 @@ function renderLogs() {
     const sqLabel = sq ? SLEEP_LABELS[sq] || sq : '—';
     const enLabel = en ? ENERGY_LABELS[en] || en : '—';
     const weightTag = log.weight ? `<span class="log-tag" style="background:#f3e5f5;color:#7b1fa2;">⚖️ ${log.weight}kg</span>` : '';
-    const exTag = log.exercise === true ? `<span class="log-tag tag-orange">🏃 运动</span>` : '';
-    const periodTag = log.period === true ? `<span class="log-tag" style="background:#fce4ec;color:#c2185b;">🔴 经期</span>` : '';
+    const activeTags = (log.tags||[]).map(tid => {
+      const t = data.tagDefs.find(x => x.id === tid);
+      return t ? `<span class="log-tag" style="background:${t.color}22;color:${t.color};">${t.icon} ${escHtml(t.name)}</span>` : '';
+    }).join('');
     return `<div class="log-item" onclick="openLogDetail(${log.id})">
       <div class="log-date">${fmtDate(log.date)}<small>${log.date}</small></div>
       <div class="log-meta">
         <span class="log-tag tag-green">🌙 ${log.sleep.hoursSlept}h · ${sqLabel}</span>
         <span class="log-tag tag-orange">⚡ ${enLabel}</span>
         ${rate !== null ? `<span class="log-tag tag-blue">💊 ${rate}%</span>` : ''}
-        ${weightTag}${exTag}${periodTag}
+        ${weightTag}${activeTags}
       </div>
     </div>`;
   }).join('');
@@ -669,19 +740,23 @@ function openLogDetail(id) {
   currentDetailId = id;
   document.getElementById('detail-title').textContent = log.date;
 
+  const sq = log.sleep.quality;
+  const en = log.energy.level;
+
   const suppRows = data.supplements.map(s => {
     const taken = log.supplements?.[s.id];
     return `<div class="trend-row"><span class="trend-label">${escHtml(s.name)}</span>
       <span class="trend-val" style="color:${taken?'var(--green)':'var(--text-muted)'}">${taken?'✓ 已服':'✗ 未服'}</span></div>`;
   }).join('') || '<p style="font-size:13px;color:var(--text-muted);">无补剂记录</p>';
 
-  const sq = log.sleep.quality;
-  const en = log.energy.level;
-  const boolStr = v => v === true ? '✓ 是' : v === false ? '✗ 否' : '未记录';
+  const tagList = (log.tags||[]).map(tid => {
+    const t = data.tagDefs.find(x => x.id === tid);
+    return t ? `<span class="tag-chip active" style="background:${t.color};font-size:12px;">${t.icon} ${escHtml(t.name)}</span>` : '';
+  }).join('') || '<span style="font-size:13px;color:var(--text-muted);">无</span>';
 
   document.getElementById('detail-content').innerHTML = `
     <div class="card">
-      <div class="card-title"><span class="dot"></span>睡眠</div>
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span>睡眠</div>
       <div class="trend-row"><span class="trend-label">时长</span><span class="trend-val">${log.sleep.hoursSlept} 小时</span></div>
       <div class="trend-row"><span class="trend-label">质量</span><span class="trend-val">${sq ? SLEEP_LABELS[sq]||sq : '未记录'}</span></div>
     </div>
@@ -689,12 +764,13 @@ function openLogDetail(id) {
       <div class="card-title"><span class="dot" style="background:var(--orange)"></span>精力</div>
       <div class="trend-row"><span class="trend-label">状态</span><span class="trend-val">${en ? ENERGY_LABELS[en]||en : '未记录'}</span></div>
     </div>
+    ${log.weight ? `<div class="card">
+      <div class="card-title"><span class="dot" style="background:#9c27b0"></span>体重</div>
+      <div class="trend-row"><span class="trend-label">体重</span><span class="trend-val">${log.weight} kg</span></div>
+    </div>` : ''}
     <div class="card">
-      <div class="card-title"><span class="dot" style="background:#9c27b0"></span>身体</div>
-      ${log.weight !== null && log.weight !== undefined ? `<div class="trend-row"><span class="trend-label">体重</span><span class="trend-val">${log.weight} kg</span></div>` : ''}
-      <div class="trend-row"><span class="trend-label">经期</span><span class="trend-val" style="color:${log.period?'#e91e63':'var(--text-muted)'}">${boolStr(log.period)}</span></div>
-      <div class="trend-row"><span class="trend-label">16:8 断食</span><span class="trend-val" style="color:${log.fasting16?'var(--green)':'var(--text-muted)'}">${boolStr(log.fasting16)}</span></div>
-      <div class="trend-row"><span class="trend-label">运动 ≥ 10min</span><span class="trend-val" style="color:${log.exercise?'var(--green)':'var(--text-muted)'}">${boolStr(log.exercise)}</span></div>
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span>标签</div>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;padding-top:4px;">${tagList}</div>
     </div>
     ${data.supplements.length ? `<div class="card">
       <div class="card-title"><span class="dot" style="background:var(--blue)"></span>补剂</div>
@@ -739,19 +815,16 @@ function openLogEditModal(log) {
     <div class="field"><label>睡眠时长</label>
       <div class="slider-wrap">
         <input type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}" id="edit-sl"
-          oninput="updateSliderEdit(this,'edit-sl-v'); updateLogField(${log.id},'sleep.hoursSlept',parseFloat(this.value))" />
+          oninput="document.getElementById('edit-sl-v').textContent=this.value+'h'; updateLogField(${log.id},'sleep.hoursSlept',parseFloat(this.value))" />
         <span class="slider-val" id="edit-sl-v">${log.sleep.hoursSlept}h</span>
       </div>
+      <div class="slider-ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span></div>
     </div>
     <div class="field"><label>睡眠质量</label><div class="tri-group" id="edit-sq">${sqBtns}</div></div>
     <div class="field"><label>精力</label><div class="tri-group" id="edit-en">${enBtns}</div></div>
     ${suppRows ? `<div class="field"><label>补剂</label><div class="supp-list">${suppRows}</div></div>` : ''}
     <button class="btn btn-primary" onclick="saveLogEdit(${log.id})">保存修改</button>
   `);
-}
-
-function updateSliderEdit(el, valId) {
-  document.getElementById(valId).textContent = el.value + 'h';
 }
 
 function setTriLog(logId, groupId, val, field) {
@@ -836,7 +909,6 @@ function openAddLab() {
     <input type="number" step="any" placeholder="数值" id="lab-m-${m.key}" style="flex:1;min-width:0;padding:8px;" />
     <span style="font-size:12px;color:var(--text-muted);min-width:52px;text-align:right;">${m.unit}</span>
   </div>`).join('');
-
   openModal('添加检测记录', `
     <div class="field"><label>日期</label><input type="date" id="lab-date" value="${today()}" /></div>
     <div class="field"><label>类型</label>
@@ -844,7 +916,7 @@ function openAddLab() {
     </div>
     <div class="field"><label>医院</label><input type="text" id="lab-lab" placeholder="UCLA Health" /></div>
     <div class="field"><label>检测值（只填有结果的）</label>${rows}</div>
-    <div class="field" id="cm-wrap"><label>自定义指标</label>
+    <div class="field"><label>自定义指标</label>
       <div id="custom-markers"></div>
       <button class="btn btn-sm btn-secondary" style="margin-top:7px;" onclick="addCustomMarker()">＋ 添加</button>
     </div>
@@ -875,7 +947,8 @@ async function submitLab() {
     const el = document.getElementById('lab-m-' + m);
     if (el && el.value !== '') values[m] = { value: parseFloat(el.value), ...refs[m] };
   });
-  document.querySelectorAll('[id^="cm-"]:not(#cm-wrap):not(#custom-markers)').forEach(row => {
+  document.querySelectorAll('[id^="cm-"]').forEach(row => {
+    if (!row.id.match(/^cm-\d+$/)) return;
     const id = row.id.replace('cm-','');
     const n = document.getElementById('cm-n-'+id)?.value?.trim();
     const v = document.getElementById('cm-v-'+id)?.value;
