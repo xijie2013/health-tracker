@@ -1,7 +1,7 @@
 {
-  "name": "桥本健康追踪",
-  "short_name": "桥本健康",
-  "description": "追踪睡眠、精力、补剂与甲状腺检测数据",
+  "name": "健康追踪",
+  "short_name": "健康追踪",
+  "description": "追踪每日睡眠、精力、补剂与检测数据",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#2d7d55",
