@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#2d7d55"/>
+  <!-- Leaf shape -->
+  <path d="M256 100 C180 140 140 210 160 300 C180 380 240 410 256 420 C272 410 332 380 352 300 C372 210 332 140 256 100Z"
+        fill="#ffffff" opacity="0.95"/>
+  <!-- Leaf vein -->
+  <path d="M256 120 L256 400" stroke="#2d7d55" stroke-width="10" stroke-linecap="round" opacity="0.6"/>
+  <path d="M256 200 C230 210 210 230 200 260" stroke="#2d7d55" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M256 250 C230 260 215 280 210 310" stroke="#2d7d55" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M256 200 C282 210 302 230 312 260" stroke="#2d7d55" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <path d="M256 250 C282 260 297 280 302 310" stroke="#2d7d55" stroke-width="6" stroke-linecap="round" fill="none" opacity="0.5"/>
+  <!-- Heart accent -->
+  <path d="M240 155 C230 145 215 148 215 163 C215 175 240 195 256 205 C272 195 297 175 297 163 C297 148 282 145 272 155 C266 148 260 148 256 152 C252 148 246 148 240 155Z"
+        fill="#4caf7d" opacity="0.7"/>
+</svg>

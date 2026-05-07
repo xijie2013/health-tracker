@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#2d7d55" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="桥本健康" />
+<link rel="manifest" href="manifest.json" />
+<title>桥本健康追踪</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green:       #2d7d55;
+    --green-light: #e8f5ee;
+    --green-mid:   #4caf7d;
+    --red:         #d93025;
+    --red-light:   #fdecea;
+    --orange:      #e67e22;
+    --orange-light:#fef3e2;
+    --blue:        #1a73e8;
+    --blue-light:  #e8f0fe;
+    --bg:          #f5f7f5;
+    --surface:     #ffffff;
+    --border:      #dde5e0;
+    --text:        #1e2d26;
+    --text-muted:  #6b8070;
+    --shadow:      0 2px 8px rgba(0,0,0,.10);
+    --radius:      14px;
+    --tab-h:       60px;
+    --header-h:    56px;
+  }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+  /* ===== Layout ===== */
+  #app { display: flex; flex-direction: column; height: 100vh; max-width: 600px; margin: 0 auto; position: relative; background: var(--bg); }
+
+  header { height: var(--header-h); background: var(--green); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
+  header h1 { color: #fff; font-size: 18px; font-weight: 600; }
+  #sync-btn { background: rgba(255,255,255,.2); border: none; color: #fff; border-radius: 20px; padding: 6px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  #sync-btn:active { background: rgba(255,255,255,.35); }
+  #sync-status { width: 8px; height: 8px; border-radius: 50%; background: #8bc34a; flex-shrink: 0; }
+  #sync-status.syncing { background: #ffc107; animation: pulse 1s infinite; }
+  #sync-status.error { background: #f44336; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  #content { flex: 1; overflow-y: auto; padding-bottom: calc(var(--tab-h) + 8px); }
+
+  nav { height: var(--tab-h); background: var(--surface); display: flex; border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; z-index: 100; }
+  .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: none; background: none; color: var(--text-muted); font-size: 10px; cursor: pointer; transition: color .2s; padding: 6px 0; }
+  .tab-btn .icon { font-size: 22px; line-height: 1; }
+  .tab-btn.active { color: var(--green); }
+  .tab-btn.active .icon { transform: scale(1.1); }
+
+  /* ===== Tab Panels ===== */
+  .tab-panel { display: none; padding: 16px; }
+  .tab-panel.active { display: block; }
+
+  /* ===== Cards ===== */
+  .card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .card-title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+
+  /* ===== Form Elements ===== */
+  label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+  input[type=text], input[type=number], textarea, select {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 15px; background: #fff; color: var(--text); outline: none; transition: border-color .2s;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--green); }
+  textarea { resize: vertical; min-height: 72px; }
+  .field { margin-bottom: 14px; }
+
+  /* ===== Stars ===== */
+  .star-row { display: flex; gap: 8px; }
+  .star { font-size: 28px; cursor: pointer; user-select: none; transition: transform .1s; color: #ddd; }
+  .star.on { color: #ffc107; }
+  .star:active { transform: scale(1.3); }
+
+  /* ===== Slider ===== */
+  .slider-wrap { display: flex; align-items: center; gap: 10px; }
+  .slider-wrap input[type=range] { flex: 1; accent-color: var(--green); }
+  .slider-val { min-width: 24px; font-size: 15px; font-weight: 600; color: var(--green); text-align: center; }
+
+  /* ===== Buttons ===== */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 20px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .1s; }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--green); color: #fff; width: 100%; }
+  .btn-primary:hover { opacity: .9; }
+  .btn-secondary { background: var(--green-light); color: var(--green); }
+  .btn-danger { background: var(--red-light); color: var(--red); }
+  .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+
+  /* ===== Supplement Checkboxes ===== */
+  .supp-list { display: flex; flex-direction: column; gap: 10px; }
+  .supp-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--bg); cursor: pointer; transition: background .15s; user-select: none; }
+  .supp-item:active { background: var(--green-light); }
+  .supp-item.checked { background: var(--green-light); }
+  .supp-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+  .supp-item.checked .supp-check { background: var(--green); border-color: var(--green); }
+  .supp-check::after { content: '✓'; color: #fff; font-size: 13px; font-weight: 700; display: none; }
+  .supp-item.checked .supp-check::after { display: block; }
+  .supp-info { flex: 1; }
+  .supp-name { font-size: 14px; font-weight: 500; }
+  .supp-dose { font-size: 12px; color: var(--text-muted); }
+  .supp-cat { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); flex-shrink: 0; }
+
+  /* ===== Log List ===== */
+  .log-item { background: var(--surface); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow); cursor: pointer; transition: box-shadow .2s; }
+  .log-item:hover { box-shadow: 0 4px 16px rgba(0,0,0,.13); }
+  .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .log-date { font-size: 15px; font-weight: 600; }
+  .log-date small { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 6px; }
+  .log-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .log-tag { font-size: 12px; padding: 3px 9px; border-radius: 8px; display: flex; align-items: center; gap: 4px; }
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-orange { background: var(--orange-light); color: var(--orange); }
+  .tag-blue { background: var(--blue-light); color: var(--blue); }
+  .log-symptom { font-size: 13px; color: var(--text-muted); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ===== Lab Cards ===== */
+  .lab-card { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .lab-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .lab-date { font-size: 15px; font-weight: 600; }
+  .lab-lab { font-size: 12px; color: var(--text-muted); }
+  .lab-type { font-size: 12px; padding: 3px 10px; border-radius: 10px; background: var(--blue-light); color: var(--blue); }
+  .lab-values { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .lab-val { background: var(--bg); border-radius: 10px; padding: 8px 12px; }
+  .lab-val.out { background: var(--red-light); }
+  .lab-val-name { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
+  .lab-val-num { font-size: 17px; font-weight: 700; color: var(--text); }
+  .lab-val.out .lab-val-num { color: var(--red); }
+  .lab-val-unit { font-size: 11px; color: var(--text-muted); }
+  .lab-val-ref { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+  .lab-note { font-size: 13px; color: var(--text-muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+  /* ===== Supplement Management ===== */
+  .supp-mgmt-item { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .supp-mgmt-item:last-child { border-bottom: none; }
+  .supp-mgmt-info { flex: 1; }
+  .supp-mgmt-name { font-size: 14px; font-weight: 500; }
+  .supp-mgmt-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .supp-mgmt-actions { display: flex; gap: 6px; }
+
+  /* ===== Modal ===== */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: flex-end; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border-radius: 20px 20px 0 0; padding: 24px 20px 32px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; animation: slideUp .25s ease; }
+  @keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-close { font-size: 24px; color: var(--text-muted); background: none; border: none; cursor: pointer; line-height: 1; }
+
+  /* ===== Setup Screen ===== */
+  #setup-overlay { display: none; position: fixed; inset: 0; background: var(--green); z-index: 300; flex-direction: column; align-items: center; justify-content: center; padding: 32px 24px; }
+  #setup-overlay.open { display: flex; }
+  .setup-logo { font-size: 64px; margin-bottom: 16px; }
+  .setup-title { color: #fff; font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+  .setup-sub { color: rgba(255,255,255,.75); font-size: 14px; margin-bottom: 32px; text-align: center; }
+  .setup-box { background: #fff; border-radius: 16px; padding: 24px; width: 100%; max-width: 380px; }
+  .setup-box .field label { color: var(--text); font-size: 14px; font-weight: 500; }
+  .setup-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ===== Detail Panel ===== */
+  #detail-overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 150; overflow-y: auto; }
+  #detail-overlay.open { display: block; }
+  .detail-header { position: sticky; top: 0; background: var(--green); color: #fff; padding: 14px 16px; display: flex; align-items: center; gap: 12px; z-index: 10; }
+  .detail-back { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+  .detail-header h2 { font-size: 17px; font-weight: 600; flex: 1; }
+  .detail-content { padding: 16px; }
+
+  /* ===== Empty States ===== */
+  .empty { text-align: center; padding: 48px 24px; color: var(--text-muted); }
+  .empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* ===== Energy Grid ===== */
+  .energy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .energy-grid .field:last-child { grid-column: 1 / -1; }
+
+  /* ===== Trend Section ===== */
+  .trend-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .trend-row:last-child { border-bottom: none; }
+  .trend-label { color: var(--text-muted); }
+  .trend-val { font-weight: 600; }
+
+  /* ===== Today Date Banner ===== */
+  .date-banner { background: linear-gradient(135deg, var(--green), var(--green-mid)); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+  .date-banner .date-big { font-size: 22px; font-weight: 700; }
+  .date-banner .date-sub { font-size: 13px; opacity: .8; margin-top: 2px; }
+  .date-banner .date-right { text-align: right; }
+  .date-banner .status-dot { font-size: 13px; opacity: .9; }
+
+  /* ===== Divider ===== */
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+  /* ===== Toast ===== */
+  #toast { position: fixed; bottom: calc(var(--tab-h) + 16px); left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 500; opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
+  #toast.show { opacity: 1; }
+
+  /* ===== Lab form grid ===== */
+  .lab-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .lab-form-grid .field { margin-bottom: 0; }
+  .lab-marker-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .lab-marker-name { font-size: 14px; font-weight: 600; min-width: 80px; }
+
+  /* ===== Scrollbar ===== */
+  #content::-webkit-scrollbar { width: 4px; }
+  #content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ===== Setup Overlay ===== -->
+<div id="setup-overlay">
+  <div class="setup-logo">🌿</div>
+  <div class="setup-title">桥本健康追踪</div>
+  <div class="setup-sub">首次使用，请配置数据存储信息<br>所有数据保存在你的私有 GitHub Gist</div>
+  <div class="setup-box">
+    <div class="field">
+      <label>GitHub Gist ID</label>
+      <input type="text" id="setup-gist-id" placeholder="例：a1b2c3d4e5f6..." />
+      <div class="setup-hint">从 Gist URL 里复制最后那段 hash</div>
+    </div>
+    <div class="field">
+      <label>GitHub PAT Token（仅需 gist 权限）</label>
+      <input type="text" id="setup-token" placeholder="ghp_xxxxxxxxxxxx" />
+      <div class="setup-hint">Settings → Developer Settings → Personal Access Tokens</div>
+    </div>
+    <button class="btn btn-primary" onclick="saveSetup()">开始使用</button>
+  </div>
+</div>
+
+<!-- ===== Main App ===== -->
+<div id="app">
+  <header>
+    <h1>🌿 桥本健康追踪</h1>
+    <button id="sync-btn" onclick="syncNow()">
+      <span id="sync-status"></span>
+      <span id="sync-label">同步</span>
+    </button>
+  </header>
+
+  <div id="content">
+    <!-- Tab: 今日 -->
+    <div class="tab-panel active" id="panel-today">
+      <div id="today-content"></div>
+    </div>
+
+    <!-- Tab: 日志 -->
+    <div class="tab-panel" id="panel-logs">
+      <div id="logs-content"></div>
+    </div>
+
+    <!-- Tab: 检测 -->
+    <div class="tab-panel" id="panel-lab">
+      <div id="lab-content"></div>
+    </div>
+
+    <!-- Tab: 补剂 -->
+    <div class="tab-panel" id="panel-supps">
+      <div id="supps-content"></div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="tab-btn active" data-tab="today" onclick="switchTab('today',this)">
+      <span class="icon">☀️</span>今日
+    </button>
+    <button class="tab-btn" data-tab="logs" onclick="switchTab('logs',this)">
+      <span class="icon">📋</span>日志
+    </button>
+    <button class="tab-btn" data-tab="lab" onclick="switchTab('lab',this)">
+      <span class="icon">🧪</span>检测
+    </button>
+    <button class="tab-btn" data-tab="supps" onclick="switchTab('supps',this)">
+      <span class="icon">💊</span>补剂
+    </button>
+  </nav>
+</div>
+
+<!-- ===== Supplement / Lab Add/Edit Modal ===== -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-body">
+    <div class="modal-title">
+      <span id="modal-title-text"></span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- ===== Log Detail Overlay ===== -->
+<div id="detail-overlay">
+  <div class="detail-header">
+    <button class="detail-back" onclick="closeDetail()">‹</button>
+    <h2 id="detail-title">日志详情</h2>
+    <button class="btn btn-sm btn-secondary" style="padding:6px 14px;font-size:13px;" onclick="editCurrentDetail()">编辑</button>
+  </div>
+  <div class="detail-content" id="detail-content"></div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div id="toast"></div>
+
+<script>
+// ===================================================================
+// DATA LAYER
+// ===================================================================
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+let GIST_ID = LS.get('ht_gist_id') || '';
+let TOKEN   = LS.get('ht_token')   || '';
+let data    = null;
+let currentDetailId = null;
+
+function needsSetup() { return !GIST_ID || !TOKEN; }
+
+function saveSetup() {
+  GIST_ID = document.getElementById('setup-gist-id').value.trim();
+  TOKEN   = document.getElementById('setup-token').value.trim();
+  if (!GIST_ID || !TOKEN) { alert('请填写 Gist ID 和 Token'); return; }
+  LS.set('ht_gist_id', GIST_ID);
+  LS.set('ht_token', TOKEN);
+  document.getElementById('setup-overlay').classList.remove('open');
+  init();
+}
+
+// ===================================================================
+// GIST API
+// ===================================================================
+async function fetchGist() {
+  setSyncStatus('syncing');
+  try {
+    const r = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      headers: { 'Authorization': `token ${TOKEN}`, 'Accept': 'application/vnd.github+json' }
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const gist = await r.json();
+    const content = gist.files['health-data.json']?.content;
+    if (!content) throw new Error('health-data.json 不存在');
+    data = JSON.parse(content);
+    LS.set('ht_cache', data);
+    setSyncStatus('ok');
+    return true;
+  } catch(e) {
+    console.error(e);
+    setSyncStatus('error');
+    // fallback to cache
+    const cached = LS.get('ht_cache');
+    if (cached) { data = cached; toast('⚠️ 使用缓存数据（离线模式）'); return true; }
+    toast('❌ 无法加载数据：' + e.message);
+    return false;
+  }
+}
+
+async function patchGist() {
+  setSyncStatus('syncing');
+  data.exportedAt = new Date().toISOString();
+  try {
+    const r = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${TOKEN}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ files: { 'health-data.json': { content: JSON.stringify(data, null, 2) } } })
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    LS.set('ht_cache', data);
+    setSyncStatus('ok');
+    toast('✅ 已保存');
+    return true;
+  } catch(e) {
+    setSyncStatus('error');
+    toast('❌ 保存失败：' + e.message);
+    return false;
+  }
+}
+
+function setSyncStatus(s) {
+  const el = document.getElementById('sync-status');
+  const lb = document.getElementById('sync-label');
+  el.className = s;
+  lb.textContent = s === 'syncing' ? '同步中…' : s === 'error' ? '失败' : '已同步';
+}
+
+async function syncNow() {
+  await fetchGist();
+  renderAll();
+}
+
+// ===================================================================
+// INIT
+// ===================================================================
+async function init() {
+  if (needsSetup()) {
+    document.getElementById('setup-overlay').classList.add('open');
+    return;
+  }
+  const ok = await fetchGist();
+  if (!ok) return;
+  if (!data) data = emptyData();
+  renderAll();
+}
+
+function emptyData() {
+  return { version: 1, exportedAt: new Date().toISOString(), nextLogId: 1, nextLabId: 1, supplements: [], dailyLogs: [], labResults: [] };
+}
+
+function renderAll() {
+  renderToday();
+  renderLogs();
+  renderLab();
+  renderSupps();
+}
+
+// ===================================================================
+// HELPERS
+// ===================================================================
+function today() { return new Date().toISOString().slice(0,10); }
+function fmtDate(d) {
+  const dt = new Date(d + 'T00:00:00');
+  const wk = ['日','一','二','三','四','五','六'][dt.getDay()];
+  return `${d.slice(5)} 周${wk}`;
+}
+function stars(n, max=5) {
+  return Array.from({length:max}, (_,i) => i < n ? '★' : '☆').join('');
+}
+function suppCompletionRate(log) {
+  if (!data.supplements.length) return null;
+  const taken = data.supplements.filter(s => log.supplements?.[s.id]).length;
+  return Math.round(taken / data.supplements.length * 100);
+}
+
+function toast(msg, dur=2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), dur);
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function openModal(title, html) {
+  document.getElementById('modal-title-text').textContent = title;
+  document.getElementById('modal-content').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+// ===================================================================
+// TAB 1 — 今日
+// ===================================================================
+function renderToday() {
+  const todayStr = today();
+  let log = data.dailyLogs.find(l => l.date === todayStr);
+  if (!log) {
+    log = {
+      id: data.nextLogId++,
+      date: todayStr,
+      sleep: { hoursSlept: 7, quality: 3, note: '' },
+      energy: { morning: 3, afternoon: 3, evening: 3, overall: 3, note: '' },
+      supplements: {},
+      symptoms: '', note: ''
+    };
+    data.dailyLogs.push(log);
+  }
+
+  const dt = new Date();
+  const dayNames = ['周日','周一','周二','周三','周四','周五','周六'];
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  const hasRecorded = log.sleep.quality > 0 || log.symptoms;
+  const statusText = hasRecorded ? '今日已记录 ✓' : '今日待打卡';
+
+  const suppRows = data.supplements.map(s => {
+    const checked = log.supplements?.[s.id] ? 'checked' : '';
+    return `<div class="supp-item ${checked ? 'checked' : ''}" onclick="toggleSupp(${s.id}, this)" data-id="${s.id}">
+      <div class="supp-check"></div>
+      <div class="supp-info">
+        <div class="supp-name">${s.name}</div>
+        <div class="supp-dose">${s.dose} / ${s.unit}${s.note ? '  · ' + s.note : ''}</div>
+      </div>
+      <span class="supp-cat">${s.category}</span>
+    </div>`;
+  }).join('') || '<p style="color:var(--text-muted);font-size:13px;">还没有补剂记录，去「补剂」标签添加</p>';
+
+  document.getElementById('today-content').innerHTML = `
+    <div class="date-banner">
+      <div>
+        <div class="date-big">${monthNames[dt.getMonth()]} ${dt.getDate()}日</div>
+        <div class="date-sub">${dt.getFullYear()} · ${dayNames[dt.getDay()]}</div>
+      </div>
+      <div class="date-right">
+        <div class="status-dot">${statusText}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>睡眠</div>
+      <div class="field">
+        <label>睡眠时长（小时）</label>
+        <div class="slider-wrap">
+          <input type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}"
+            oninput="updateSlider(this,'sleep-val'); updateTodayField('sleep.hoursSlept', parseFloat(this.value))" />
+          <span class="slider-val" id="sleep-val">${log.sleep.hoursSlept}</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>睡眠质量</label>
+        <div class="star-row" id="sleep-stars">
+          ${[1,2,3,4,5].map(i => `<span class="star ${i <= log.sleep.quality ? 'on' : ''}" onclick="setStar('sleep-stars', ${i}, 'sleep.quality')">${i <= log.sleep.quality ? '★' : '☆'}</span>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label>备注（可选）</label>
+        <input type="text" value="${escHtml(log.sleep.note)}" placeholder="例：半夜醒了一次"
+          oninput="updateTodayField('sleep.note', this.value)" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>精力</div>
+      <div class="energy-grid">
+        ${['morning','afternoon','evening'].map((k, i) => {
+          const labels = ['上午','下午','晚间'];
+          return `<div class="field">
+            <label>${labels[i]}</label>
+            <div class="slider-wrap">
+              <input type="range" min="1" max="5" step="1" value="${log.energy[k]}"
+                oninput="updateSlider(this,'energy-${k}'); updateTodayField('energy.${k}', parseInt(this.value))" />
+              <span class="slider-val" id="energy-${k}">${log.energy[k]}</span>
+            </div>
+          </div>`;
+        }).join('')}
+        <div class="field">
+          <label>整体精力</label>
+          <div class="star-row" id="energy-stars">
+            ${[1,2,3,4,5].map(i => `<span class="star ${i <= log.energy.overall ? 'on' : ''}" onclick="setStar('energy-stars', ${i}, 'energy.overall')">${i <= log.energy.overall ? '★' : '☆'}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span>今日补剂</div>
+      <div class="supp-list">${suppRows}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:#e91e63"></span>症状 & 备注</div>
+      <div class="field">
+        <label>症状描述</label>
+        <textarea placeholder="甲状腺区不适、水肿、情绪低落、脱发…" oninput="updateTodayField('symptoms', this.value)">${escHtml(log.symptoms)}</textarea>
+      </div>
+      <div class="field">
+        <label>其他备注</label>
+        <textarea placeholder="饮食、运动、特殊事件…" oninput="updateTodayField('note', this.value)">${escHtml(log.note)}</textarea>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveToday()" style="margin-bottom:8px;">💾 保存今日记录</button>
+  `;
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updateSlider(el, valId) {
+  document.getElementById(valId).textContent = el.value;
+}
+
+function setStar(containerId, val, field) {
+  const container = document.getElementById(containerId);
+  container.querySelectorAll('.star').forEach((s, i) => {
+    s.textContent = i < val ? '★' : '☆';
+    s.classList.toggle('on', i < val);
+  });
+  const todayStr = today();
+  const log = data.dailyLogs.find(l => l.date === todayStr);
+  if (!log) return;
+  const parts = field.split('.');
+  if (parts.length === 2) log[parts[0]][parts[1]] = val;
+  else log[parts[0]] = val;
+}
+
+function updateTodayField(field, val) {
+  const todayStr = today();
+  const log = data.dailyLogs.find(l => l.date === todayStr);
+  if (!log) return;
+  const parts = field.split('.');
+  if (parts.length === 2) log[parts[0]][parts[1]] = val;
+  else log[parts[0]] = val;
+}
+
+function toggleSupp(id, el) {
+  const todayStr = today();
+  const log = data.dailyLogs.find(l => l.date === todayStr);
+  if (!log) return;
+  if (!log.supplements) log.supplements = {};
+  log.supplements[id] = !log.supplements[id];
+  el.classList.toggle('checked', log.supplements[id]);
+}
+
+async function saveToday() {
+  await patchGist();
+  renderToday();
+}
+
+// ===================================================================
+// TAB 2 — 日志历史
+// ===================================================================
+function renderLogs() {
+  const sorted = [...data.dailyLogs].sort((a,b) => b.date.localeCompare(a.date));
+  if (!sorted.length) {
+    document.getElementById('logs-content').innerHTML = `<div class="empty"><div class="empty-icon">📋</div><p>还没有任何日志记录<br>在「今日」标签开始打卡</p></div>`;
+    return;
+  }
+  const html = sorted.map(log => {
+    const rate = suppCompletionRate(log);
+    const rateTag = rate !== null ? `<span class="log-tag tag-blue">💊 ${rate}%</span>` : '';
+    return `<div class="log-item" onclick="openLogDetail(${log.id})">
+      <div class="log-header">
+        <div class="log-date">${fmtDate(log.date)}<small>${log.date}</small></div>
+      </div>
+      <div class="log-meta">
+        <span class="log-tag tag-green">🌙 ${log.sleep.hoursSlept}h ${stars(log.sleep.quality)}</span>
+        <span class="log-tag tag-orange">⚡ ${stars(log.energy.overall)}</span>
+        ${rateTag}
+      </div>
+      ${log.symptoms ? `<div class="log-symptom">📝 ${escHtml(log.symptoms)}</div>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('logs-content').innerHTML = html;
+}
+
+function openLogDetail(id) {
+  const log = data.dailyLogs.find(l => l.id === id);
+  if (!log) return;
+  currentDetailId = id;
+  document.getElementById('detail-title').textContent = log.date;
+
+  const suppRows = data.supplements.map(s => {
+    const taken = log.supplements?.[s.id];
+    return `<div class="trend-row"><span class="trend-label">${s.name}</span><span class="trend-val" style="color:${taken?'var(--green)':'var(--text-muted)'}">${taken ? '✓ 已服用' : '✗ 未服用'}</span></div>`;
+  }).join('') || '<p style="color:var(--text-muted);font-size:13px;">无补剂记录</p>';
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>睡眠</div>
+      <div class="trend-row"><span class="trend-label">时长</span><span class="trend-val">${log.sleep.hoursSlept} 小时</span></div>
+      <div class="trend-row"><span class="trend-label">质量</span><span class="trend-val">${stars(log.sleep.quality)}</span></div>
+      ${log.sleep.note ? `<div class="trend-row"><span class="trend-label">备注</span><span class="trend-val">${escHtml(log.sleep.note)}</span></div>` : ''}
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>精力</div>
+      <div class="trend-row"><span class="trend-label">上午</span><span class="trend-val">${stars(log.energy.morning)}</span></div>
+      <div class="trend-row"><span class="trend-label">下午</span><span class="trend-val">${stars(log.energy.afternoon)}</span></div>
+      <div class="trend-row"><span class="trend-label">晚间</span><span class="trend-val">${stars(log.energy.evening)}</span></div>
+      <div class="trend-row"><span class="trend-label">整体</span><span class="trend-val">${stars(log.energy.overall)}</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span>补剂</div>
+      ${suppRows}
+    </div>
+    ${log.symptoms || log.note ? `<div class="card">
+      <div class="card-title"><span class="dot" style="background:#e91e63"></span>症状 & 备注</div>
+      ${log.symptoms ? `<div class="trend-row"><span class="trend-label">症状</span><span class="trend-val">${escHtml(log.symptoms)}</span></div>` : ''}
+      ${log.note ? `<div class="trend-row"><span class="trend-label">备注</span><span class="trend-val">${escHtml(log.note)}</span></div>` : ''}
+    </div>` : ''}
+    <button class="btn btn-danger" style="width:100%;margin-top:8px;" onclick="deleteLog(${log.id})">🗑 删除此条记录</button>
+  `;
+
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detail-overlay').classList.remove('open');
+  currentDetailId = null;
+}
+
+function editCurrentDetail() {
+  if (!currentDetailId) return;
+  closeDetail();
+  const log = data.dailyLogs.find(l => l.id === currentDetailId);
+  if (!log) return;
+  openLogEditModal(log);
+}
+
+function openLogEditModal(log) {
+  const suppRows = data.supplements.map(s => {
+    const checked = log.supplements?.[s.id];
+    return `<div class="supp-item ${checked ? 'checked' : ''}" onclick="toggleSuppInModal(${s.id}, ${log.id}, this)" data-id="${s.id}">
+      <div class="supp-check"></div>
+      <div class="supp-info">
+        <div class="supp-name">${s.name}</div>
+        <div class="supp-dose">${s.dose}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  openModal(`编辑日志 · ${log.date}`, `
+    <div class="field"><label>睡眠时长</label>
+      <div class="slider-wrap">
+        <input type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}" id="edit-sleep-h"
+          oninput="updateSlider(this,'edit-sleep-h-val'); updateLogField(${log.id},'sleep.hoursSlept',parseFloat(this.value))" />
+        <span class="slider-val" id="edit-sleep-h-val">${log.sleep.hoursSlept}</span>
+      </div>
+    </div>
+    <div class="field"><label>睡眠质量</label>
+      <div class="star-row" id="edit-sleep-q">
+        ${[1,2,3,4,5].map(i => `<span class="star ${i<=log.sleep.quality?'on':''}" onclick="setStarLog(${log.id},'edit-sleep-q',${i},'sleep.quality')">${i<=log.sleep.quality?'★':'☆'}</span>`).join('')}
+      </div>
+    </div>
+    <div class="field"><label>整体精力</label>
+      <div class="star-row" id="edit-energy-o">
+        ${[1,2,3,4,5].map(i => `<span class="star ${i<=log.energy.overall?'on':''}" onclick="setStarLog(${log.id},'edit-energy-o',${i},'energy.overall')">${i<=log.energy.overall?'★':'☆'}</span>`).join('')}
+      </div>
+    </div>
+    <div class="field"><label>症状</label>
+      <textarea oninput="updateLogField(${log.id},'symptoms',this.value)">${escHtml(log.symptoms)}</textarea>
+    </div>
+    <div class="field"><label>备注</label>
+      <textarea oninput="updateLogField(${log.id},'note',this.value)">${escHtml(log.note)}</textarea>
+    </div>
+    ${suppRows ? `<div class="field"><label>补剂</label><div class="supp-list">${suppRows}</div></div>` : ''}
+    <button class="btn btn-primary" onclick="saveLogEdit(${log.id})">保存修改</button>
+  `);
+}
+
+function updateLogField(id, field, val) {
+  const log = data.dailyLogs.find(l => l.id === id);
+  if (!log) return;
+  const parts = field.split('.');
+  if (parts.length === 2) log[parts[0]][parts[1]] = val;
+  else log[parts[0]] = val;
+}
+
+function setStarLog(logId, containerId, val, field) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.querySelectorAll('.star').forEach((s,i) => {
+    s.textContent = i < val ? '★' : '☆';
+    s.classList.toggle('on', i < val);
+  });
+  updateLogField(logId, field, val);
+}
+
+function toggleSuppInModal(suppId, logId, el) {
+  const log = data.dailyLogs.find(l => l.id === logId);
+  if (!log) return;
+  if (!log.supplements) log.supplements = {};
+  log.supplements[suppId] = !log.supplements[suppId];
+  el.classList.toggle('checked', log.supplements[suppId]);
+}
+
+async function saveLogEdit(id) {
+  await patchGist();
+  closeModal();
+  renderLogs();
+  renderToday();
+}
+
+async function deleteLog(id) {
+  if (!confirm('确认删除这条日志？')) return;
+  data.dailyLogs = data.dailyLogs.filter(l => l.id !== id);
+  await patchGist();
+  closeDetail();
+  renderLogs();
+  renderToday();
+}
+
+// ===================================================================
+// TAB 3 — 检测记录
+// ===================================================================
+function renderLab() {
+  const sorted = [...data.labResults].sort((a,b) => b.date.localeCompare(a.date));
+  const addBtn = `<button class="btn btn-secondary" style="width:100%;margin-bottom:14px;" onclick="openAddLab()">＋ 添加新检测</button>`;
+
+  if (!sorted.length) {
+    document.getElementById('lab-content').innerHTML = addBtn + `<div class="empty"><div class="empty-icon">🧪</div><p>还没有检测记录<br>添加你的甲状腺功能报告</p></div>`;
+    return;
+  }
+
+  const cards = sorted.map(lab => {
+    const valHtml = Object.entries(lab.values || {}).map(([key, v]) => {
+      const out = (v.refLow !== undefined && v.refHigh !== undefined) &&
+                  (v.value < v.refLow || v.value > v.refHigh);
+      const ref = (v.refLow !== undefined) ? `${v.refLow}–${v.refHigh}` : '';
+      return `<div class="lab-val ${out ? 'out' : ''}">
+        <div class="lab-val-name">${key}</div>
+        <div class="lab-val-num">${v.value}<span class="lab-val-unit"> ${v.unit||''}</span></div>
+        ${ref ? `<div class="lab-val-ref">参考：${ref}</div>` : ''}
+      </div>`;
+    }).join('');
+    return `<div class="lab-card">
+      <div class="lab-header">
+        <div>
+          <div class="lab-date">${lab.date}</div>
+          <div class="lab-lab">${lab.lab||''}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="lab-type">${lab.type||'检测'}</span>
+          <button class="btn btn-sm btn-danger" onclick="deleteLab(${lab.id})">✕</button>
+        </div>
+      </div>
+      <div class="lab-values">${valHtml}</div>
+      ${lab.note ? `<div class="lab-note">📝 ${escHtml(lab.note)}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  document.getElementById('lab-content').innerHTML = addBtn + cards;
+}
+
+function openAddLab() {
+  const stdMarkers = [
+    { key: 'TSH',    unit: 'mIU/L',  refLow: 0.4, refHigh: 4.0 },
+    { key: 'FT4',    unit: 'ng/dL',  refLow: 0.8, refHigh: 1.8 },
+    { key: 'FT3',    unit: 'pg/mL',  refLow: 2.3, refHigh: 4.2 },
+    { key: 'TPO-Ab', unit: 'IU/mL',  refLow: 0,   refHigh: 35  },
+    { key: 'Tg-Ab',  unit: 'IU/mL',  refLow: 0,   refHigh: 20  },
+  ];
+  const markerRows = stdMarkers.map(m =>
+    `<div class="lab-marker-row">
+      <div class="lab-marker-name">${m.key}</div>
+      <input type="number" step="any" placeholder="数值" id="lab-m-${m.key}" style="flex:1;min-width:0;padding:8px;" />
+      <span style="font-size:13px;color:var(--text-muted);min-width:56px;text-align:right;">${m.unit}</span>
+    </div>`
+  ).join('');
+
+  openModal('添加检测记录', `
+    <div class="field"><label>检测日期</label>
+      <input type="date" id="lab-date" value="${today()}" />
+    </div>
+    <div class="field"><label>检测类型</label>
+      <select id="lab-type">
+        <option>甲状腺功能</option><option>抗体</option><option>全血</option><option>其他</option>
+      </select>
+    </div>
+    <div class="field"><label>医院 / 实验室</label>
+      <input type="text" id="lab-lab" placeholder="UCLA Health" />
+    </div>
+    <div class="field">
+      <label>检测值（填写有值的项目即可）</label>
+      ${markerRows}
+    </div>
+    <div class="field" id="custom-markers-wrap">
+      <label>自定义指标</label>
+      <div id="custom-markers"></div>
+      <button class="btn btn-sm btn-secondary" style="margin-top:8px;" onclick="addCustomMarker()">＋ 添加指标</button>
+    </div>
+    <div class="field"><label>备注</label>
+      <textarea id="lab-note" placeholder="TSH 较上次下降…"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="submitLab()">保存检测记录</button>
+  `);
+}
+
+let customMarkerCount = 0;
+function addCustomMarker() {
+  customMarkerCount++;
+  const id = customMarkerCount;
+  const row = document.createElement('div');
+  row.className = 'lab-marker-row';
+  row.id = `custom-row-${id}`;
+  row.innerHTML = `
+    <input type="text" placeholder="名称" id="cm-name-${id}" style="width:80px;padding:8px;" />
+    <input type="number" step="any" placeholder="数值" id="cm-val-${id}" style="flex:1;min-width:0;padding:8px;" />
+    <input type="text" placeholder="单位" id="cm-unit-${id}" style="width:60px;padding:8px;" />
+    <button onclick="document.getElementById('custom-row-${id}').remove()" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;">✕</button>
+  `;
+  document.getElementById('custom-markers').appendChild(row);
+}
+
+async function submitLab() {
+  const stdMarkers = ['TSH','FT4','FT3','TPO-Ab','Tg-Ab'];
+  const stdRefs = {
+    'TSH':    { unit:'mIU/L', refLow:0.4, refHigh:4.0 },
+    'FT4':    { unit:'ng/dL', refLow:0.8, refHigh:1.8 },
+    'FT3':    { unit:'pg/mL', refLow:2.3, refHigh:4.2 },
+    'TPO-Ab': { unit:'IU/mL', refLow:0,   refHigh:35  },
+    'Tg-Ab':  { unit:'IU/mL', refLow:0,   refHigh:20  },
+  };
+  const values = {};
+  stdMarkers.forEach(m => {
+    const inp = document.getElementById('lab-m-' + m);
+    if (inp && inp.value !== '') {
+      values[m] = { value: parseFloat(inp.value), ...stdRefs[m] };
+    }
+  });
+  // Custom markers
+  document.querySelectorAll('[id^="custom-row-"]').forEach(row => {
+    const id = row.id.replace('custom-row-','');
+    const name = document.getElementById('cm-name-'+id)?.value?.trim();
+    const val  = document.getElementById('cm-val-'+id)?.value;
+    const unit = document.getElementById('cm-unit-'+id)?.value?.trim();
+    if (name && val !== '') values[name] = { value: parseFloat(val), unit: unit||'' };
+  });
+
+  if (!Object.keys(values).length) { toast('请至少填写一项检测值'); return; }
+
+  const lab = {
+    id: data.nextLabId++,
+    date: document.getElementById('lab-date').value,
+    type: document.getElementById('lab-type').value,
+    lab:  document.getElementById('lab-lab').value.trim(),
+    values,
+    note: document.getElementById('lab-note').value.trim(),
+  };
+  data.labResults.push(lab);
+  await patchGist();
+  closeModal();
+  renderLab();
+}
+
+async function deleteLab(id) {
+  if (!confirm('确认删除这条检测记录？')) return;
+  data.labResults = data.labResults.filter(l => l.id !== id);
+  await patchGist();
+  renderLab();
+}
+
+// ===================================================================
+// TAB 4 — 补剂管理
+// ===================================================================
+function renderSupps() {
+  const addBtn = `<button class="btn btn-secondary" style="width:100%;margin-bottom:14px;" onclick="openAddSupp()">＋ 添加补剂</button>`;
+
+  if (!data.supplements.length) {
+    document.getElementById('supps-content').innerHTML = addBtn + `<div class="empty"><div class="empty-icon">💊</div><p>还没有添加任何补剂<br>点击上方按钮添加</p></div>`;
+    return;
+  }
+
+  const catColors = { '处方药':'#e91e63', '矿物质':'#ff9800', '维生素':'#4caf50', '中药':'#795548', '其他':'#607d8b' };
+  const rows = data.supplements.map(s => {
+    const color = catColors[s.category] || '#607d8b';
+    return `<div class="supp-mgmt-item">
+      <div style="width:4px;height:44px;border-radius:2px;background:${color};flex-shrink:0;"></div>
+      <div class="supp-mgmt-info">
+        <div class="supp-mgmt-name">${escHtml(s.name)}</div>
+        <div class="supp-mgmt-detail">${escHtml(s.dose)} / ${escHtml(s.unit)} · ${escHtml(s.category)}${s.note ? ' · ' + escHtml(s.note) : ''}</div>
+      </div>
+      <div class="supp-mgmt-actions">
+        <button class="btn btn-sm btn-secondary" onclick="openEditSupp(${s.id})">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteSupp(${s.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('supps-content').innerHTML = addBtn + `<div class="card">${rows}</div>`;
+}
+
+function suppFormHtml(s = {}) {
+  const cats = ['处方药','维生素','矿物质','中药','其他'];
+  return `
+    <div class="field"><label>名称</label><input type="text" id="sf-name" value="${escHtml(s.name||'')}" placeholder="左甲状腺素（Levothyroxine）" /></div>
+    <div class="field"><label>剂量</label><input type="text" id="sf-dose" value="${escHtml(s.dose||'')}" placeholder="50mcg" /></div>
+    <div class="field"><label>单位</label><input type="text" id="sf-unit" value="${escHtml(s.unit||'')}" placeholder="片" /></div>
+    <div class="field"><label>分类</label>
+      <select id="sf-cat">${cats.map(c => `<option ${c===s.category?'selected':''}>${c}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>备注（可选）</label><input type="text" id="sf-note" value="${escHtml(s.note||'')}" placeholder="早起空腹服用" /></div>
+  `;
+}
+
+function openAddSupp() {
+  openModal('添加补剂', suppFormHtml() + `<button class="btn btn-primary" onclick="submitSupp()">保存</button>`);
+}
+
+function openEditSupp(id) {
+  const s = data.supplements.find(x => x.id === id);
+  if (!s) return;
+  openModal('编辑补剂', suppFormHtml(s) + `<button class="btn btn-primary" onclick="submitSuppEdit(${id})">保存修改</button>`);
+}
+
+async function submitSupp() {
+  const name = document.getElementById('sf-name').value.trim();
+  if (!name) { toast('请填写补剂名称'); return; }
+  const ids = data.supplements.map(s => s.id);
+  const newId = ids.length ? Math.max(...ids) + 1 : 1;
+  data.supplements.push({
+    id: newId, name,
+    dose: document.getElementById('sf-dose').value.trim(),
+    unit: document.getElementById('sf-unit').value.trim(),
+    category: document.getElementById('sf-cat').value,
+    note: document.getElementById('sf-note').value.trim(),
+  });
+  await patchGist();
+  closeModal();
+  renderSupps();
+  renderToday();
+}
+
+async function submitSuppEdit(id) {
+  const s = data.supplements.find(x => x.id === id);
+  if (!s) return;
+  const name = document.getElementById('sf-name').value.trim();
+  if (!name) { toast('请填写补剂名称'); return; }
+  s.name     = name;
+  s.dose     = document.getElementById('sf-dose').value.trim();
+  s.unit     = document.getElementById('sf-unit').value.trim();
+  s.category = document.getElementById('sf-cat').value;
+  s.note     = document.getElementById('sf-note').value.trim();
+  await patchGist();
+  closeModal();
+  renderSupps();
+  renderToday();
+}
+
+async function deleteSupp(id) {
+  if (!confirm('删除后，历史日志中此补剂的打卡记录也会失效。确认删除？')) return;
+  data.supplements = data.supplements.filter(s => s.id !== id);
+  await patchGist();
+  renderSupps();
+  renderToday();
+}
+
+// ===================================================================
+// START
+// ===================================================================
+init();
+</script>
+</body>
+</html>

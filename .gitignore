@@ -1,0 +1,7 @@
+# 保护 PAT Token，绝不进 git
+.kanban/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
