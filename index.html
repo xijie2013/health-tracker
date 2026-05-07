@@ -1,1045 +1,1004 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<meta name="theme-color" content="#2d7d55" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="健康追踪" />
-<link rel="manifest" href="manifest.json" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<meta name="theme-color" content="#2d7d55"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="健康追踪"/>
+<link rel="manifest" href="manifest.json"/>
 <title>健康追踪</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --green:       #2d7d55;
-    --green-light: #e8f5ee;
-    --green-mid:   #4caf7d;
-    --red:         #d93025;
-    --red-light:   #fdecea;
-    --orange:      #e67e22;
-    --orange-light:#fef3e2;
-    --blue:        #1a73e8;
-    --blue-light:  #e8f0fe;
-    --bg:          #f0f4f1;
-    --surface:     #ffffff;
-    --border:      #dde5e0;
-    --text:        #1e2d26;
-    --text-muted:  #6b8070;
-    --shadow:      0 2px 8px rgba(0,0,0,.09);
-    --radius:      14px;
-    --tab-h:       58px;
-    --header-h:    52px;
-    --thumb:       18px; /* slider thumb width — used for tick offset */
-  }
-  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#2d7d55;--gl:#e8f5ee;--gm:#4caf7d;
+  --r:#d93025;--rl:#fdecea;
+  --o:#e67e22;--ol:#fef3e2;
+  --b:#1a73e8;--bl:#e8f0fe;
+  --bg:#f0f4f1;--sur:#fff;--bdr:#dde5e0;
+  --tx:#1e2d26;--txm:#6b8070;
+  --sh:0 2px 8px rgba(0,0,0,.09);
+  --rad:14px;--tabh:56px;--hdrh:52px;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased}
+#app{display:flex;flex-direction:column;height:100vh;max-width:600px;margin:0 auto;background:var(--bg)}
+header{height:var(--hdrh);background:var(--g);display:flex;align-items:center;justify-content:space-between;padding:0 14px;flex-shrink:0}
+header h1{color:#fff;font-size:17px;font-weight:600}
+.hdr-btn{background:rgba(255,255,255,.18);border:none;color:#fff;border-radius:18px;padding:5px 11px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px}
+.hdr-btn:active{background:rgba(255,255,255,.32)}
+#sync-dot{width:7px;height:7px;border-radius:50%;background:#8bc34a;flex-shrink:0}
+#sync-dot.syncing{background:#ffc107;animation:pulse 1s infinite}
+#sync-dot.error{background:#f44336}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#content{flex:1;overflow-y:auto;padding-bottom:calc(var(--tabh)+4px)}
+nav{height:var(--tabh);background:var(--sur);display:flex;border-top:1px solid var(--bdr);position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;z-index:100}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:none;background:none;color:var(--txm);font-size:9px;cursor:pointer;transition:color .15s}
+.tab-btn .icon{font-size:19px;line-height:1}
+.tab-btn.active{color:var(--g)}
+.tab-panel{display:none;padding:12px}
+.tab-panel.active{display:block}
 
-  /* ── Layout ── */
-  #app { display: flex; flex-direction: column; height: 100vh; max-width: 600px; margin: 0 auto; background: var(--bg); }
-  header { height: var(--header-h); background: var(--green); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; flex-shrink: 0; }
-  header h1 { color: #fff; font-size: 17px; font-weight: 600; }
-  .header-actions { display: flex; gap: 8px; align-items: center; }
-  .hdr-btn { background: rgba(255,255,255,.18); border: none; color: #fff; border-radius: 18px; padding: 5px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-  .hdr-btn:active { background: rgba(255,255,255,.32); }
-  #sync-status { width: 7px; height: 7px; border-radius: 50%; background: #8bc34a; flex-shrink: 0; }
-  #sync-status.syncing { background: #ffc107; animation: pulse 1s infinite; }
-  #sync-status.error { background: #f44336; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-  #content { flex: 1; overflow-y: auto; padding-bottom: calc(var(--tab-h) + 4px); }
-  nav { height: var(--tab-h); background: var(--surface); display: flex; border-top: 1px solid var(--border); position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; z-index: 100; }
-  .tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: none; background: none; color: var(--text-muted); font-size: 10px; cursor: pointer; transition: color .15s; }
-  .tab-btn .icon { font-size: 21px; line-height: 1; }
-  .tab-btn.active { color: var(--green); }
-  .tab-panel { display: none; padding: 12px; }
-  .tab-panel.active { display: block; }
+/* cards */
+.card{background:var(--sur);border-radius:var(--rad);padding:14px;margin-bottom:10px;box-shadow:var(--sh)}
+.card-title{font-size:11px;font-weight:700;color:var(--txm);letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px;text-transform:uppercase}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block}
+.cs{padding:10px 0;border-bottom:1px solid var(--bg)}
+.cs:last-child{border-bottom:none;padding-bottom:0}
+.cs:first-child{padding-top:0}
 
-  /* ── Cards ── */
-  .card { background: var(--surface); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
-  .card-title { font-size: 12px; font-weight: 600; color: var(--text-muted); letter-spacing: .4px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; }
-  .card-title .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .card-section { padding: 10px 0; border-bottom: 1px solid var(--bg); }
-  .card-section:last-child { border-bottom: none; padding-bottom: 0; }
-  .card-section:first-child { padding-top: 0; }
+/* slider */
+.sl-wrap{display:flex;align-items:center;gap:8px}
+.sl-wrap input[type=range]{flex:1;accent-color:var(--g);cursor:pointer}
+.sl-val{font-size:15px;font-weight:700;color:var(--g);min-width:38px;text-align:right;flex-shrink:0}
+/* ticks: padding set by JS to align with thumb center */
+.sl-ticks{display:flex;justify-content:space-between;margin-top:3px}
+.sl-ticks span{font-size:9px;color:var(--txm);line-height:1;flex-shrink:0}
 
-  /* ── Slider (aligned ticks) ── */
-  .slider-wrap { display: flex; align-items: center; gap: 10px; }
-  .slider-wrap input[type=range] { flex: 1; accent-color: var(--green); cursor: pointer; }
-  .slider-val { min-width: 36px; font-size: 16px; font-weight: 700; color: var(--green); text-align: right; flex-shrink: 0; }
-  /*
-   * Tick labels: offset by calc(var(--thumb)/2) so first and last labels
-   * align with thumb-center at min and max positions.
-   */
-  .slider-ticks {
-    display: flex; justify-content: space-between;
-    padding: 3px calc(var(--thumb)/2) 0;
-    margin-top: 1px;
-  }
-  .slider-ticks span { font-size: 10px; color: var(--text-muted); line-height: 1; }
+/* 3-option */
+.tri{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.tb{padding:9px 4px;border:2px solid var(--bdr);border-radius:10px;background:#fff;font-size:13px;font-weight:600;color:var(--txm);cursor:pointer;text-align:center;transition:all .15s;user-select:none}
+.tb:active{transform:scale(.96)}
+.tb.bad{border-color:var(--r);background:var(--rl);color:var(--r)}
+.tb.ok{border-color:var(--o);background:var(--ol);color:var(--o)}
+.tb.good{border-color:var(--g);background:var(--gl);color:var(--g)}
 
-  /* ── 3-option picker ── */
-  .tri-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-  .tri-btn { padding: 10px 4px; border: 2px solid var(--border); border-radius: 10px; background: #fff; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; text-align: center; transition: all .15s; user-select: none; }
-  .tri-btn:active { transform: scale(.96); }
-  .tri-btn.sel-bad  { border-color: var(--red);    background: var(--red-light);    color: var(--red); }
-  .tri-btn.sel-ok   { border-color: var(--orange);  background: var(--orange-light); color: var(--orange); }
-  .tri-btn.sel-good { border-color: var(--green);   background: var(--green-light);  color: var(--green); }
+/* tags */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:7px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:7px 12px;border-radius:20px;border:2px solid var(--bdr);background:#fff;font-size:13px;font-weight:500;color:var(--txm);cursor:pointer;user-select:none;transition:all .15s}
+.chip:active{transform:scale(.95)}
+.chip.on{color:#fff;border-color:transparent}
+.chip-add{display:inline-flex;align-items:center;gap:4px;padding:7px 12px;border-radius:20px;border:2px dashed var(--bdr);background:transparent;font-size:13px;color:var(--txm);cursor:pointer;transition:all .15s}
+.chip-add:active{background:var(--gl);border-color:var(--g);color:var(--g)}
 
-  /* ── Tag chips ── */
-  .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
-  .tag-chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 7px 13px; border-radius: 20px;
-    border: 2px solid var(--border); background: #fff;
-    font-size: 13px; font-weight: 500; color: var(--text-muted);
-    cursor: pointer; user-select: none; transition: all .15s;
-  }
-  .tag-chip:active { transform: scale(.95); }
-  .tag-chip.active { color: #fff; border-color: transparent; }
-  .tag-chip-add {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 7px 13px; border-radius: 20px;
-    border: 2px dashed var(--border); background: transparent;
-    font-size: 13px; color: var(--text-muted); cursor: pointer;
-    transition: all .15s;
-  }
-  .tag-chip-add:active { background: var(--green-light); border-color: var(--green); color: var(--green); }
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s,transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--g);color:#fff;width:100%}
+.btn-s{background:var(--gl);color:var(--g)}
+.btn-d{background:var(--rl);color:var(--r)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px}
 
-  /* ── General buttons ── */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 18px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .1s; }
-  .btn:active { transform: scale(.97); }
-  .btn-primary { background: var(--green); color: #fff; width: 100%; }
-  .btn-secondary { background: var(--green-light); color: var(--green); }
-  .btn-danger { background: var(--red-light); color: var(--red); }
-  .btn-sm { padding: 5px 11px; font-size: 13px; border-radius: 8px; }
+/* form */
+label{display:block;font-size:13px;color:var(--txm);margin-bottom:4px}
+input[type=text],input[type=number],input[type=date],textarea,select{
+  width:100%;padding:9px 11px;border:1.5px solid var(--bdr);border-radius:10px;
+  font-size:14px;background:#fff;color:var(--tx);outline:none;transition:border-color .2s;font-family:inherit}
+input:focus,textarea:focus,select:focus{border-color:var(--g)}
+textarea{resize:vertical;min-height:60px}
+.field{margin-bottom:12px}
 
-  /* ── Form elements ── */
-  label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
-  input[type=text], input[type=number], input[type=date], textarea, select {
-    width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 10px;
-    font-size: 15px; background: #fff; color: var(--text); outline: none; transition: border-color .2s; font-family: inherit;
-  }
-  input:focus, textarea:focus, select:focus { border-color: var(--green); }
-  textarea { resize: vertical; min-height: 64px; }
-  .field { margin-bottom: 12px; }
+/* supplement checkboxes */
+.sl-list{display:flex;flex-direction:column;gap:7px}
+.si{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;background:var(--bg);cursor:pointer;transition:background .12s;user-select:none}
+.si.on{background:var(--gl)}
+.sc{width:22px;height:22px;border-radius:6px;border:2px solid var(--bdr);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s}
+.si.on .sc{background:var(--g);border-color:var(--g)}
+.sc::after{content:'✓';color:#fff;font-size:12px;font-weight:700;display:none}
+.si.on .sc::after{display:block}
+.si-info{flex:1;min-width:0}
+.si-name{font-size:14px;font-weight:500}
+.si-dose{font-size:11px;color:var(--txm)}
+.si-cat{font-size:11px;padding:2px 7px;border-radius:9px;background:var(--bl);color:var(--b);flex-shrink:0}
 
-  /* ── Supplement checkboxes ── */
-  .supp-list { display: flex; flex-direction: column; gap: 8px; }
-  .supp-item { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 10px; background: var(--bg); cursor: pointer; transition: background .12s; user-select: none; }
-  .supp-item.checked { background: var(--green-light); }
-  .supp-check { width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .12s; }
-  .supp-item.checked .supp-check { background: var(--green); border-color: var(--green); }
-  .supp-check::after { content: '✓'; color: #fff; font-size: 13px; font-weight: 700; display: none; }
-  .supp-item.checked .supp-check::after { display: block; }
-  .supp-info { flex: 1; min-width: 0; }
-  .supp-name { font-size: 14px; font-weight: 500; }
-  .supp-dose { font-size: 12px; color: var(--text-muted); }
-  .supp-cat { font-size: 11px; padding: 2px 7px; border-radius: 9px; background: var(--blue-light); color: var(--blue); flex-shrink: 0; }
+/* log list */
+.li{background:var(--sur);border-radius:var(--rad);padding:11px 13px;margin-bottom:8px;box-shadow:var(--sh);cursor:pointer}
+.li-date{font-size:14px;font-weight:600;margin-bottom:5px}
+.li-date small{font-size:11px;color:var(--txm);font-weight:400;margin-left:5px}
+.li-meta{display:flex;gap:6px;flex-wrap:wrap}
+.lt{font-size:11px;padding:3px 8px;border-radius:7px}
+.tg{background:var(--gl);color:var(--g)}
+.to{background:var(--ol);color:var(--o)}
+.tb2{background:var(--bl);color:var(--b)}
 
-  /* ── Log list ── */
-  .log-item { background: var(--surface); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 9px; box-shadow: var(--shadow); cursor: pointer; }
-  .log-date { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-  .log-date small { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-left: 6px; }
-  .log-meta { display: flex; gap: 7px; flex-wrap: wrap; }
-  .log-tag { font-size: 12px; padding: 3px 9px; border-radius: 8px; }
-  .tag-green  { background: var(--green-light); color: var(--green); }
-  .tag-orange { background: var(--orange-light); color: var(--orange); }
-  .tag-blue   { background: var(--blue-light); color: var(--blue); }
+/* lab */
+.lab-card{background:var(--sur);border-radius:var(--rad);padding:14px;margin-bottom:10px;box-shadow:var(--sh)}
+.lab-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.lab-dt{font-size:14px;font-weight:600}
+.lab-lb{font-size:11px;color:var(--txm)}
+.lab-tp{font-size:11px;padding:3px 8px;border-radius:8px;background:var(--bl);color:var(--b)}
+.lab-vals{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:6px}
+.lv{background:var(--bg);border-radius:9px;padding:7px 10px}
+.lv.out{background:var(--rl)}
+.lv-n{font-size:10px;color:var(--txm);margin-bottom:2px}
+.lv-v{font-size:15px;font-weight:700}
+.lv.out .lv-v{color:var(--r)}
+.lv-u{font-size:10px;color:var(--txm)}
+.lv-r{font-size:9px;color:var(--txm);margin-top:2px}
+.lab-note{font-size:12px;color:var(--txm);margin-top:8px;padding-top:8px;border-top:1px solid var(--bdr)}
+.lmr{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.lmn{font-size:13px;font-weight:600;min-width:72px}
 
-  /* ── Lab cards ── */
-  .lab-card { background: var(--surface); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
-  .lab-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-  .lab-date { font-size: 15px; font-weight: 600; }
-  .lab-lab { font-size: 12px; color: var(--text-muted); }
-  .lab-type { font-size: 12px; padding: 3px 9px; border-radius: 9px; background: var(--blue-light); color: var(--blue); }
-  .lab-values { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 7px; }
-  .lab-val { background: var(--bg); border-radius: 9px; padding: 8px 10px; }
-  .lab-val.out { background: var(--red-light); }
-  .lab-val-name { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
-  .lab-val-num { font-size: 16px; font-weight: 700; }
-  .lab-val.out .lab-val-num { color: var(--red); }
-  .lab-val-unit { font-size: 10px; color: var(--text-muted); }
-  .lab-val-ref { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-  .lab-note { font-size: 13px; color: var(--text-muted); margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); }
-  .lab-marker-row { display: flex; align-items: center; gap: 7px; margin-bottom: 9px; }
-  .lab-marker-name { font-size: 14px; font-weight: 600; min-width: 76px; }
+/* supp mgmt */
+.smi{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr)}
+.smi:last-child{border-bottom:none}
+.smi-info{flex:1;min-width:0}
+.smi-name{font-size:13px;font-weight:500}
+.smi-detail{font-size:11px;color:var(--txm);margin-top:2px}
+.smi-act{display:flex;gap:5px;flex-shrink:0}
 
-  /* ── Supplement management ── */
-  .supp-mgmt-item { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
-  .supp-mgmt-item:last-child { border-bottom: none; }
-  .supp-mgmt-info { flex: 1; min-width: 0; }
-  .supp-mgmt-name { font-size: 14px; font-weight: 500; }
-  .supp-mgmt-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
-  .supp-mgmt-actions { display: flex; gap: 6px; flex-shrink: 0; }
+/* modal */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-end;justify-content:center}
+.mo.open{display:flex}
+.modal{background:var(--sur);border-radius:20px 20px 0 0;padding:20px 16px 28px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;animation:su .22s ease}
+@keyframes su{from{transform:translateY(50px);opacity:0}to{transform:none;opacity:1}}
+.m-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.m-close{font-size:22px;color:var(--txm);background:none;border:none;cursor:pointer}
 
-  /* ── Modal ── */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: flex-end; justify-content: center; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border-radius: 20px 20px 0 0; padding: 22px 18px 30px; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; animation: slideUp .22s ease; }
-  @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
-  .modal-close { font-size: 22px; color: var(--text-muted); background: none; border: none; cursor: pointer; }
+/* setup */
+#setup{display:none;position:fixed;inset:0;background:var(--g);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px}
+#setup.open{display:flex}
+.s-logo{font-size:56px;margin-bottom:12px}
+.s-title{color:#fff;font-size:21px;font-weight:700;margin-bottom:6px}
+.s-sub{color:rgba(255,255,255,.75);font-size:13px;margin-bottom:26px;text-align:center;line-height:1.6}
+.s-box{background:#fff;border-radius:16px;padding:20px;width:100%;max-width:360px}
+.s-box label{color:var(--tx);font-size:13px;font-weight:500}
+.s-hint{font-size:11px;color:var(--txm);margin-top:3px}
 
-  /* ── Setup ── */
-  #setup-overlay { display: none; position: fixed; inset: 0; background: var(--green); z-index: 300; flex-direction: column; align-items: center; justify-content: center; padding: 32px 22px; }
-  #setup-overlay.open { display: flex; }
-  .setup-logo { font-size: 60px; margin-bottom: 14px; }
-  .setup-title { color: #fff; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-  .setup-sub { color: rgba(255,255,255,.75); font-size: 13px; margin-bottom: 28px; text-align: center; line-height: 1.6; }
-  .setup-box { background: #fff; border-radius: 16px; padding: 22px; width: 100%; max-width: 380px; }
-  .setup-box label { color: var(--text); font-size: 14px; font-weight: 500; }
-  .setup-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+/* detail */
+#det{display:none;position:fixed;inset:0;background:var(--bg);z-index:150;overflow-y:auto}
+#det.open{display:block}
+.det-hdr{position:sticky;top:0;background:var(--g);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:12px;z-index:10}
+.det-back{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+.det-hdr h2{font-size:16px;font-weight:600;flex:1}
+.det-body{padding:13px}
+.tr{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.tr:last-child{border-bottom:none}
+.tr-l{color:var(--txm)}
+.tr-v{font-weight:600}
 
-  /* ── Detail overlay ── */
-  #detail-overlay { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 150; overflow-y: auto; }
-  #detail-overlay.open { display: block; }
-  .detail-header { position: sticky; top: 0; background: var(--green); color: #fff; padding: 13px 14px; display: flex; align-items: center; gap: 12px; z-index: 10; }
-  .detail-back { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; line-height: 1; }
-  .detail-header h2 { font-size: 16px; font-weight: 600; flex: 1; }
-  .detail-content { padding: 14px; }
+/* date banner */
+.banner{background:linear-gradient(135deg,var(--g),var(--gm));border-radius:var(--rad);padding:12px 14px;margin-bottom:10px;color:#fff;display:flex;justify-content:space-between;align-items:center}
+.b-big{font-size:19px;font-weight:700}
+.b-sub{font-size:11px;opacity:.8;margin-top:1px}
+.b-st{font-size:12px;opacity:.9}
 
-  /* ── Trend rows ── */
-  .trend-row { display: flex; justify-content: space-between; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--border); }
-  .trend-row:last-child { border-bottom: none; }
-  .trend-label { color: var(--text-muted); }
-  .trend-val { font-weight: 600; }
+/* empty */
+.empty{text-align:center;padding:36px 16px;color:var(--txm)}
+.empty .ei{font-size:40px;margin-bottom:10px}
+.empty p{font-size:13px;line-height:1.6}
 
-  /* ── Date banner ── */
-  .date-banner { background: linear-gradient(135deg, var(--green), var(--green-mid)); border-radius: var(--radius); padding: 13px 14px; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-  .date-big { font-size: 20px; font-weight: 700; }
-  .date-sub { font-size: 12px; opacity: .8; margin-top: 1px; }
-  .date-status { font-size: 12px; opacity: .9; }
+/* toast */
+#toast{position:fixed;bottom:calc(var(--tabh)+12px);left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 16px;border-radius:16px;font-size:13px;z-index:500;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1}
 
-  /* ── Empty states ── */
-  .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
-  .empty .empty-icon { font-size: 44px; margin-bottom: 10px; }
-  .empty p { font-size: 14px; line-height: 1.6; }
+/* summary charts */
+.chart-wrap{width:100%;overflow:hidden}
+.chart-wrap svg{width:100%;height:auto;display:block}
+.sum-section{margin-bottom:14px}
+.period-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:12px;font-size:12px;font-weight:600;margin:3px}
+.tag-stat{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:13px}
+.tag-stat:last-child{border-bottom:none}
+.tag-bar-bg{flex:1;height:6px;border-radius:3px;background:var(--bg);overflow:hidden}
+.tag-bar-fill{height:100%;border-radius:3px;transition:width .4s}
 
-  /* ── Toast ── */
-  #toast { position: fixed; bottom: calc(var(--tab-h) + 14px); left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 9px 18px; border-radius: 18px; font-size: 14px; z-index: 500; opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap; }
-  #toast.show { opacity: 1; }
-
-  /* ── Scrollbar ── */
-  #content::-webkit-scrollbar { width: 3px; }
-  #content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+#content::-webkit-scrollbar{width:3px}
+#content::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
 </style>
 </head>
 <body>
 
-<!-- Setup -->
-<div id="setup-overlay">
-  <div class="setup-logo">🌿</div>
-  <div class="setup-title">健康追踪</div>
-  <div class="setup-sub">首次使用，请配置云端数据存储<br>数据保存在你的私有 GitHub Gist</div>
-  <div class="setup-box">
-    <div class="field">
-      <label>GitHub Gist ID</label>
-      <input type="text" id="setup-gist-id" placeholder="Gist URL 最后那串 hash" />
-      <div class="setup-hint">gist.github.com/xijie2013/<b>这里</b></div>
+<div id="setup">
+  <div class="s-logo">🌿</div>
+  <div class="s-title">健康追踪</div>
+  <div class="s-sub">首次使用，请配置云端数据存储<br>数据保存在你的私有 GitHub Gist</div>
+  <div class="s-box">
+    <div class="field"><label>GitHub Gist ID</label>
+      <input type="text" id="su-gid" placeholder="Gist URL 最后那串 hash"/>
+      <div class="s-hint">gist.github.com/xijie2013/<b>这里</b></div>
     </div>
-    <div class="field">
-      <label>GitHub PAT Token</label>
-      <input type="text" id="setup-token" placeholder="ghp_xxxxxxxxxxxx" />
-      <div class="setup-hint">Settings → Developer Settings → Personal Access Tokens（勾 gist 权限）</div>
+    <div class="field"><label>GitHub PAT Token</label>
+      <input type="text" id="su-tok" placeholder="ghp_xxxxxxxxxxxx"/>
+      <div class="s-hint">Settings → Developer Settings → Personal Access Tokens（勾 gist 权限）</div>
     </div>
-    <button class="btn btn-primary" onclick="saveSetup()">开始使用</button>
+    <button class="btn btn-p" onclick="saveSetup()">开始使用</button>
   </div>
 </div>
 
-<!-- App -->
 <div id="app">
   <header>
     <h1>🌿 健康追踪</h1>
-    <div class="header-actions">
-      <button class="hdr-btn" onclick="syncNow()">
-        <span id="sync-status"></span>
-        <span id="sync-label">同步</span>
-      </button>
+    <div style="display:flex;gap:7px;align-items:center">
+      <button class="hdr-btn" onclick="syncNow()"><span id="sync-dot"></span><span id="sync-lb">同步</span></button>
       <button class="hdr-btn" onclick="openSettings()">⚙️</button>
     </div>
   </header>
   <div id="content">
-    <div class="tab-panel active" id="panel-today"><div id="today-content"></div></div>
-    <div class="tab-panel" id="panel-logs"><div id="logs-content"></div></div>
-    <div class="tab-panel" id="panel-lab"><div id="lab-content"></div></div>
-    <div class="tab-panel" id="panel-supps"><div id="supps-content"></div></div>
+    <div class="tab-panel active" id="p-today"><div id="today-c"></div></div>
+    <div class="tab-panel" id="p-logs"><div id="logs-c"></div></div>
+    <div class="tab-panel" id="p-sum"><div id="sum-c"></div></div>
+    <div class="tab-panel" id="p-lab"><div id="lab-c"></div></div>
+    <div class="tab-panel" id="p-supps"><div id="supps-c"></div></div>
   </div>
   <nav>
     <button class="tab-btn active" onclick="switchTab('today',this)"><span class="icon">☀️</span>今日</button>
     <button class="tab-btn" onclick="switchTab('logs',this)"><span class="icon">📋</span>日志</button>
+    <button class="tab-btn" onclick="switchTab('sum',this)"><span class="icon">📊</span>总结</button>
     <button class="tab-btn" onclick="switchTab('lab',this)"><span class="icon">🧪</span>检测</button>
     <button class="tab-btn" onclick="switchTab('supps',this)"><span class="icon">💊</span>补剂</button>
   </nav>
 </div>
 
-<!-- Modal -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+<div class="mo" id="modal" onclick="closeModal(event)">
   <div class="modal">
-    <div class="modal-title">
-      <span id="modal-title-text"></span>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div id="modal-content"></div>
+    <div class="m-title"><span id="m-title"></span><button class="m-close" onclick="closeModal()">✕</button></div>
+    <div id="m-body"></div>
   </div>
 </div>
 
-<!-- Log Detail -->
-<div id="detail-overlay">
-  <div class="detail-header">
-    <button class="detail-back" onclick="closeDetail()">‹</button>
-    <h2 id="detail-title"></h2>
-    <button class="btn btn-sm btn-secondary" onclick="editCurrentDetail()">编辑</button>
+<div id="det">
+  <div class="det-hdr">
+    <button class="det-back" onclick="closeDet()">‹</button>
+    <h2 id="det-title"></h2>
+    <button class="btn btn-sm btn-s" onclick="editCurDet()">编辑</button>
   </div>
-  <div class="detail-content" id="detail-content"></div>
+  <div class="det-body" id="det-body"></div>
 </div>
 
 <div id="toast"></div>
 
 <script>
-// ── Constants ───────────────────────────────────────────────────────
-const LS = {
-  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
-  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
-};
-const SLEEP_LABELS  = { 1:'很差', 2:'一般', 3:'非常不错' };
-const SLEEP_CLASSES = { 1:'sel-bad', 2:'sel-ok', 3:'sel-good' };
-const ENERGY_LABELS  = { 1:'萎靡', 2:'一般', 3:'充沛' };
-const ENERGY_CLASSES = { 1:'sel-bad', 2:'sel-ok', 3:'sel-good' };
+// ── constants ────────────────────────────────────────────────────────
+const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+const SLQ={1:'很差',2:'一般',3:'非常不错'};
+const SLC={1:'bad',2:'ok',3:'good'};
+const ENL={1:'萎靡',2:'一般',3:'充沛'};
+const ENC={1:'bad',2:'ok',3:'good'};
+const DEF_TAGS=[{id:1,name:'经期',icon:'🔴',color:'#e91e63'},{id:2,name:'16:8 断食',icon:'⏰',color:'#1a73e8'},{id:3,name:'运动 10min',icon:'🏃',color:'#e67e22'}];
 
-// Default system tags
-const DEFAULT_TAGS = [
-  { id: 1, name: '经期',       icon: '🔴', color: '#e91e63' },
-  { id: 2, name: '16:8 断食',  icon: '⏰', color: '#1a73e8' },
-  { id: 3, name: '运动 10min', icon: '🏃', color: '#e67e22' },
-];
+let GIST_ID=LS.get('ht_gid')||'';
+let TOKEN=LS.get('ht_tok')||'';
+let data=null;
+let curDetId=null;
 
-let GIST_ID = LS.get('ht_gist_id') || '';
-let TOKEN   = LS.get('ht_token')   || '';
-let data = null;
-let currentDetailId = null;
-
-// ── Setup / Settings ────────────────────────────────────────────────
-function needsSetup() { return !GIST_ID || !TOKEN; }
-
-function saveSetup() {
-  const gid = document.getElementById('setup-gist-id').value.trim();
-  const tok = document.getElementById('setup-token').value.trim();
-  if (!gid || !tok) { alert('请填写 Gist ID 和 Token'); return; }
-  GIST_ID = gid; TOKEN = tok;
-  LS.set('ht_gist_id', GIST_ID); LS.set('ht_token', TOKEN);
-  document.getElementById('setup-overlay').classList.remove('open');
-  init();
+// ── setup / settings ────────────────────────────────────────────────
+function saveSetup(){
+  const g=document.getElementById('su-gid').value.trim();
+  const t=document.getElementById('su-tok').value.trim();
+  if(!g||!t){alert('请填写 Gist ID 和 Token');return}
+  GIST_ID=g;TOKEN=t;LS.set('ht_gid',g);LS.set('ht_tok',t);
+  document.getElementById('setup').classList.remove('open');init();
+}
+function openSettings(){
+  openModal('云端同步设置',`
+    <p style="font-size:12px;color:var(--txm);margin-bottom:14px">修改后立即生效并重新拉取数据</p>
+    <div class="field"><label>Gist ID</label><input type="text" id="sg" value="${esc(GIST_ID)}"/></div>
+    <div class="field"><label>PAT Token</label><input type="text" id="st" value="${esc(TOKEN)}"/>
+      <div class="s-hint">如果 regenerate 了 token，在这里更新</div></div>
+    <button class="btn btn-p" onclick="applySettings()">保存并重新同步</button>`);
+}
+async function applySettings(){
+  const g=document.getElementById('sg').value.trim();
+  const t=document.getElementById('st').value.trim();
+  if(!g||!t){toast('请填写完整');return}
+  GIST_ID=g;TOKEN=t;LS.set('ht_gid',g);LS.set('ht_tok',t);
+  closeModal();await fetchGist();renderAll();toast('✅ 设置已更新');
 }
 
-function openSettings() {
-  openModal('云端同步设置', `
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">修改后立即生效，重新拉取数据。</p>
-    <div class="field"><label>GitHub Gist ID</label>
-      <input type="text" id="s-gid" value="${escHtml(GIST_ID)}" /></div>
-    <div class="field"><label>GitHub PAT Token</label>
-      <input type="text" id="s-tok" value="${escHtml(TOKEN)}" />
-      <div class="setup-hint">如果 token 过期或 regenerate 了，在这里更新</div>
-    </div>
-    <button class="btn btn-primary" onclick="applySettings()">保存并重新同步</button>
-  `);
-}
-
-async function applySettings() {
-  const gid = document.getElementById('s-gid').value.trim();
-  const tok = document.getElementById('s-tok').value.trim();
-  if (!gid || !tok) { toast('请填写完整'); return; }
-  GIST_ID = gid; TOKEN = tok;
-  LS.set('ht_gist_id', GIST_ID); LS.set('ht_token', TOKEN);
-  closeModal();
-  await fetchGist(); renderAll(); toast('✅ 设置已更新');
-}
-
-// ── Gist API ────────────────────────────────────────────────────────
-async function fetchGist() {
-  setSyncStatus('syncing');
-  try {
-    const r = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      headers: { 'Authorization': `token ${TOKEN}`, 'Accept': 'application/vnd.github+json' }
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const gist = await r.json();
-    const content = gist.files['health-data.json']?.content;
-    if (!content) throw new Error('health-data.json 不存在');
-    data = JSON.parse(content);
-    LS.set('ht_cache', data);
-    setSyncStatus('ok'); return true;
-  } catch(e) {
-    setSyncStatus('error');
-    const cached = LS.get('ht_cache');
-    if (cached) { data = cached; toast('⚠️ 离线模式（使用缓存）'); return true; }
-    toast('❌ ' + e.message); return false;
+// ── gist api ─────────────────────────────────────────────────────────
+async function fetchGist(){
+  setSS('syncing');
+  try{
+    const r=await fetch(`https://api.github.com/gists/${GIST_ID}`,{headers:{'Authorization':`token ${TOKEN}`,'Accept':'application/vnd.github+json'}});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const gist=await r.json();
+    const c=gist.files['health-data.json']?.content;
+    if(!c)throw new Error('health-data.json 不存在');
+    data=JSON.parse(c);LS.set('ht_cache',data);setSS('ok');return true;
+  }catch(e){
+    setSS('error');
+    const ca=LS.get('ht_cache');
+    if(ca){data=ca;toast('⚠️ 离线模式');return true}
+    toast('❌ '+e.message);return false;
   }
 }
-
-async function patchGist() {
-  setSyncStatus('syncing');
-  data.exportedAt = new Date().toISOString();
-  try {
-    const r = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      method: 'PATCH',
-      headers: { 'Authorization': `token ${TOKEN}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files: { 'health-data.json': { content: JSON.stringify(data, null, 2) } } })
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    LS.set('ht_cache', data);
-    setSyncStatus('ok'); toast('✅ 已保存'); return true;
-  } catch(e) {
-    setSyncStatus('error'); toast('❌ 保存失败：' + e.message); return false;
-  }
+async function patchGist(){
+  setSS('syncing');
+  data.exportedAt=new Date().toISOString();
+  try{
+    const r=await fetch(`https://api.github.com/gists/${GIST_ID}`,{method:'PATCH',
+      headers:{'Authorization':`token ${TOKEN}`,'Accept':'application/vnd.github+json','Content-Type':'application/json'},
+      body:JSON.stringify({files:{'health-data.json':{content:JSON.stringify(data,null,2)}}})});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    LS.set('ht_cache',data);setSS('ok');toast('✅ 已保存');return true;
+  }catch(e){setSS('error');toast('❌ '+e.message);return false;}
 }
-
-function setSyncStatus(s) {
-  document.getElementById('sync-status').className = s;
-  document.getElementById('sync-label').textContent = s === 'syncing' ? '同步中' : s === 'error' ? '失败' : '已同步';
+function setSS(s){
+  document.getElementById('sync-dot').className=s;
+  document.getElementById('sync-lb').textContent=s==='syncing'?'同步中':s==='error'?'失败':'已同步';
 }
-async function syncNow() { await fetchGist(); renderAll(); }
+async function syncNow(){await fetchGist();renderAll();}
 
-// ── Init ─────────────────────────────────────────────────────────────
-async function init() {
-  if (needsSetup()) { document.getElementById('setup-overlay').classList.add('open'); return; }
-  const ok = await fetchGist();
-  if (!ok) return;
-  if (!data) data = emptyData();
-  ensureTagDefs();
-  renderAll();
+// ── init ─────────────────────────────────────────────────────────────
+async function init(){
+  if(!GIST_ID||!TOKEN){document.getElementById('setup').classList.add('open');return}
+  const ok=await fetchGist();
+  if(!ok)return;
+  if(!data)data=emptyData();
+  ensureMeta();renderAll();
 }
-
-function emptyData() {
-  return { version:1, exportedAt: new Date().toISOString(),
-    nextLogId:1, nextLabId:1, nextTagId:10,
-    tagDefs: [...DEFAULT_TAGS],
-    supplements:[], dailyLogs:[], labResults:[] };
+function emptyData(){
+  return{version:1,exportedAt:new Date().toISOString(),nextLogId:1,nextLabId:1,nextTagId:10,
+    tagDefs:[...DEF_TAGS],supplements:[],dailyLogs:[],labResults:[]};
 }
-
-function ensureTagDefs() {
-  if (!data.tagDefs) data.tagDefs = [...DEFAULT_TAGS];
-  if (!data.nextTagId) data.nextTagId = Math.max(...data.tagDefs.map(t=>t.id), 9) + 1;
+function ensureMeta(){
+  if(!data.tagDefs)data.tagDefs=[...DEF_TAGS];
+  if(!data.nextTagId)data.nextTagId=Math.max(...data.tagDefs.map(t=>t.id),9)+1;
 }
+function renderAll(){renderToday();renderLogs();renderSummary();renderLab();renderSupps();}
 
-function renderAll() { renderToday(); renderLogs(); renderLab(); renderSupps(); }
-
-// ── Helpers ──────────────────────────────────────────────────────────
-function today() { return new Date().toISOString().slice(0,10); }
-function fmtDate(d) {
-  const dt = new Date(d + 'T00:00:00');
+// ── helpers ──────────────────────────────────────────────────────────
+function today(){return new Date().toISOString().slice(0,10)}
+function fmtD(d){
+  const dt=new Date(d+'T00:00:00');
   return `${d.slice(5).replace('-','/')} 周${'日一二三四五六'[dt.getDay()]}`;
 }
-function escHtml(s) {
-  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function suppRate(log){
+  if(!data.supplements.length)return null;
+  return Math.round(data.supplements.filter(s=>log.supplements?.[s.id]).length/data.supplements.length*100);
 }
-function suppCompletionRate(log) {
-  if (!data.supplements.length) return null;
-  const taken = data.supplements.filter(s => log.supplements?.[s.id]).length;
-  return Math.round(taken / data.supplements.length * 100);
+function toast(msg,dur=2400){
+  const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),dur);
 }
-function toast(msg, dur=2400) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), dur);
+function switchTab(n,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('p-'+n).classList.add('active');btn.classList.add('active');
 }
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + name).classList.add('active');
-  btn.classList.add('active');
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('modal'))return;
+  document.getElementById('modal').classList.remove('open');
 }
-function closeModal(e) {
-  if (e && e.target !== document.getElementById('modal-overlay')) return;
-  document.getElementById('modal-overlay').classList.remove('open');
-}
-function openModal(title, html) {
-  document.getElementById('modal-title-text').textContent = title;
-  document.getElementById('modal-content').innerHTML = html;
-  document.getElementById('modal-overlay').classList.add('open');
+function openModal(title,html){
+  document.getElementById('m-title').textContent=title;
+  document.getElementById('m-body').innerHTML=html;
+  document.getElementById('modal').classList.add('open');
 }
 
-// ── TAB 1 — 今日 ─────────────────────────────────────────────────────
-function renderToday() {
-  const todayStr = today();
-  let log = data.dailyLogs.find(l => l.date === todayStr);
-  if (!log) {
-    log = { id: data.nextLogId++, date: todayStr,
-      sleep: { hoursSlept: 7, quality: 0 },
-      energy: { level: 0 },
-      weight: null,
-      tags: [],
-      supplements: {} };
+// slider tick alignment — JS measures thumb offset per browser
+function alignTicks(){
+  document.querySelectorAll('.sl-ticks[data-for]').forEach(ticks=>{
+    const sl=document.getElementById(ticks.dataset.for);
+    if(!sl)return;
+    // thumb width heuristic: iOS ~22px, Android Chrome ~20px, Desktop ~14px
+    const ua=navigator.userAgent;
+    const tw=/iPhone|iPad|iPod/.test(ua)?22:/Android/.test(ua)?20:14;
+    const half=tw/2;
+    ticks.style.paddingLeft=half+'px';
+    ticks.style.paddingRight=half+'px';
+  });
+}
+
+// ── TAB 1: 今日 ──────────────────────────────────────────────────────
+function renderToday(){
+  const ts=today();
+  let log=data.dailyLogs.find(l=>l.date===ts);
+  if(!log){
+    log={id:data.nextLogId++,date:ts,sleep:{hoursSlept:7,quality:0},energy:{level:0},weight:null,tags:[],supplements:{}};
     data.dailyLogs.push(log);
   }
-  // backfill
-  if (!log.tags) log.tags = [];
-  if (log.weight === undefined) log.weight = null;
+  if(!log.tags)log.tags=[];if(log.weight===undefined)log.weight=null;
 
-  const dt = new Date();
-  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
-  const days   = ['周日','周一','周二','周三','周四','周五','周六'];
-  const recorded = log.sleep.quality > 0 && log.energy.level > 0;
+  const dt=new Date();
+  const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const days=['周日','周一','周二','周三','周四','周五','周六'];
+  const done=log.sleep.quality>0&&log.energy.level>0;
 
-  // Sleep quality buttons
-  const sqBtns = [1,2,3].map(v => {
-    const sel = log.sleep.quality === v ? SLEEP_CLASSES[v] : '';
-    return `<button class="tri-btn ${sel}" onclick="setTri('sleep-q',${v},'sleep.quality')">${SLEEP_LABELS[v]}</button>`;
+  const sqBtns=[1,2,3].map(v=>`<button class="tb ${log.sleep.quality===v?SLC[v]:''}" onclick="setTri('sq',${v},'sleep.quality')">${SLQ[v]}</button>`).join('');
+  const enBtns=[1,2,3].map(v=>`<button class="tb ${log.energy.level===v?ENC[v]:''}" onclick="setTri('en',${v},'energy.level')">${ENL[v]}</button>`).join('');
+
+  const wVal=log.weight!==null?log.weight:52;
+  const wDisp=log.weight!==null?log.weight+' kg':'— kg';
+
+  const tagChips=data.tagDefs.map(t=>{
+    const on=log.tags.includes(t.id);
+    return `<span class="chip${on?' on':''}" style="${on?'background:'+t.color+';':''}" onclick="toggleTag(${t.id},this)">${t.icon} ${esc(t.name)}</span>`;
   }).join('');
 
-  // Energy buttons
-  const enBtns = [1,2,3].map(v => {
-    const sel = log.energy.level === v ? ENERGY_CLASSES[v] : '';
-    return `<button class="tri-btn ${sel}" onclick="setTri('energy-l',${v},'energy.level')">${ENERGY_LABELS[v]}</button>`;
-  }).join('');
+  const suppRows=data.supplements.map(s=>{
+    const ch=log.supplements?.[s.id];
+    return `<div class="si${ch?' on':''}" onclick="toggleSupp(${s.id},this)">
+      <div class="sc"></div><div class="si-info"><div class="si-name">${esc(s.name)}</div><div class="si-dose">${esc(s.dose)} ${esc(s.unit)}</div></div>
+      <span class="si-cat">${esc(s.category)}</span></div>`;
+  }).join('')||`<p style="color:var(--txm);font-size:13px">还没有补剂 → 去「补剂」标签添加</p>`;
 
-  // Weight slider: range 40–120, step 1
-  const wVal = log.weight !== null ? log.weight : 60;
-  const wDisplay = log.weight !== null ? log.weight + ' kg' : '— kg';
-
-  // Tag chips
-  const tagChips = data.tagDefs.map(t => {
-    const active = log.tags.includes(t.id);
-    const style = active ? `background:${t.color};` : '';
-    return `<span class="tag-chip ${active ? 'active' : ''}" style="${style}"
-      onclick="toggleTag(${t.id})">${t.icon} ${escHtml(t.name)}</span>`;
-  }).join('');
-
-  // Supplements
-  const suppRows = data.supplements.map(s => {
-    const checked = log.supplements?.[s.id];
-    return `<div class="supp-item ${checked ? 'checked' : ''}" onclick="toggleSupp(${s.id}, this)">
-      <div class="supp-check"></div>
-      <div class="supp-info">
-        <div class="supp-name">${escHtml(s.name)}</div>
-        <div class="supp-dose">${escHtml(s.dose)} ${escHtml(s.unit)}</div>
-      </div>
-      <span class="supp-cat">${escHtml(s.category)}</span>
-    </div>`;
-  }).join('') || `<p style="color:var(--text-muted);font-size:13px;">还没有补剂 → 去「补剂」标签添加</p>`;
-
-  document.getElementById('today-content').innerHTML = `
-    <div class="date-banner">
-      <div>
-        <div class="date-big">${months[dt.getMonth()]} ${dt.getDate()}日</div>
-        <div class="date-sub">${dt.getFullYear()} · ${days[dt.getDay()]}</div>
-      </div>
-      <div class="date-status">${recorded ? '已记录 ✓' : '待打卡'}</div>
+  document.getElementById('today-c').innerHTML=`
+    <div class="banner">
+      <div><div class="b-big">${months[dt.getMonth()]} ${dt.getDate()}日</div>
+        <div class="b-sub">${dt.getFullYear()} · ${days[dt.getDay()]}</div></div>
+      <div class="b-st">${done?'已记录 ✓':'待打卡'}</div>
     </div>
-
     <div class="card">
-      <div class="card-section">
-        <div class="card-title"><span class="dot" style="background:var(--green)"></span>睡眠时长</div>
-        <div class="slider-wrap">
-          <input type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}"
-            oninput="updateSleepSlider(this)" />
-          <span class="slider-val" id="sl-val">${log.sleep.hoursSlept}h</span>
+      <div class="cs">
+        <div class="card-title"><span class="dot" style="background:var(--g)"></span>睡眠时长</div>
+        <div class="sl-wrap">
+          <input id="sl-sleep" type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}"
+            oninput="document.getElementById('slv').textContent=this.value+'h';setF('sleep.hoursSlept',parseFloat(this.value))"/>
+          <span class="sl-val" id="slv">${log.sleep.hoursSlept}h</span>
         </div>
-        <div class="slider-ticks">
+        <div class="sl-ticks" data-for="sl-sleep">
           <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span>
         </div>
       </div>
-      <div class="card-section">
-        <div class="card-title"><span class="dot" style="background:var(--green)"></span>睡眠质量</div>
-        <div class="tri-group" id="sleep-q">${sqBtns}</div>
+      <div class="cs">
+        <div class="card-title"><span class="dot" style="background:var(--g)"></span>睡眠质量</div>
+        <div class="tri" id="sq">${sqBtns}</div>
       </div>
-      <div class="card-section">
-        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>今日精力</div>
-        <div class="tri-group" id="energy-l">${enBtns}</div>
+      <div class="cs">
+        <div class="card-title"><span class="dot" style="background:var(--o)"></span>今日精力</div>
+        <div class="tri" id="en">${enBtns}</div>
       </div>
-      <div class="card-section">
+      <div class="cs">
         <div class="card-title"><span class="dot" style="background:#9c27b0"></span>体重</div>
-        <div class="slider-wrap">
-          <input type="range" min="40" max="120" step="0.5" value="${wVal}"
-            oninput="updateWeightSlider(this)"
-            ${log.weight === null ? 'style="opacity:.4"' : ''} id="w-slider"/>
-          <span class="slider-val" id="w-val">${wDisplay}</span>
+        <div class="sl-wrap">
+          <input id="sl-wt" type="range" min="45" max="60" step="0.5" value="${wVal}"
+            style="${log.weight===null?'opacity:.35':''}"
+            oninput="document.getElementById('wtv').textContent=this.value+' kg';setF('weight',parseFloat(this.value));this.style.opacity='1'"/>
+          <span class="sl-val" id="wtv">${wDisp}</span>
         </div>
-        <div class="slider-ticks">
-          <span>40</span><span>50</span><span>60</span><span>70</span><span>80</span><span>90</span><span>100</span><span>110</span><span>120</span>
+        <div class="sl-ticks" data-for="sl-wt">
+          <span>45</span><span>50</span><span>55</span><span>60</span>
         </div>
-        <div style="margin-top:8px;">
-          <button class="btn btn-sm btn-secondary" style="font-size:12px;padding:5px 10px;" onclick="clearWeight()">清除体重</button>
-        </div>
+        <button class="btn btn-sm btn-s" style="margin-top:7px;font-size:11px" onclick="clearWt()">清除体重</button>
       </div>
-      <div class="card-section">
-        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>今日标签</div>
+      <div class="cs">
+        <div class="card-title"><span class="dot" style="background:var(--b)"></span>今日标签</div>
         <div class="tag-cloud" id="tag-cloud">
           ${tagChips}
-          <span class="tag-chip-add" onclick="openAddTag()">＋ 新增</span>
+          <span class="chip-add" onclick="openAddTag()">＋ 新增</span>
         </div>
       </div>
     </div>
-
-    ${data.supplements.length ? `
-    <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--blue)"></span>今日补剂</div>
-      <div class="supp-list">${suppRows}</div>
-    </div>` : `<div class="card"><div class="supp-list">${suppRows}</div></div>`}
-
-    <button class="btn btn-primary" onclick="saveToday()">💾 保存今日记录</button>
-  `;
-
-  // Activate weight slider on first interaction if null
-  document.getElementById('w-slider').addEventListener('input', function() {
-    this.style.opacity = '1';
-  }, { once: true });
+    ${data.supplements.length?`<div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--b)"></span>今日补剂</div>
+      <div class="sl-list">${suppRows}</div></div>`
+    :`<div class="card"><div class="sl-list">${suppRows}</div></div>`}
+    <button class="btn btn-p" onclick="saveToday()">💾 保存今日记录</button>`;
+  alignTicks();
 }
 
-function updateSleepSlider(el) {
-  document.getElementById('sl-val').textContent = el.value + 'h';
-  setField('sleep.hoursSlept', parseFloat(el.value));
+function setTri(gId,val,field){
+  const g=document.getElementById(gId);if(!g)return;
+  const isE=field.startsWith('energy');const cls=isE?ENC:SLC;
+  g.querySelectorAll('.tb').forEach((b,i)=>{b.className='tb'+(i+1===val?' '+cls[i+1]:'')});
+  setF(field,val);
+}
+function setF(field,val){
+  const log=data.dailyLogs.find(l=>l.date===today());if(!log)return;
+  const p=field.split('.');if(p.length===2)log[p[0]][p[1]]=val;else log[field]=val;
+}
+function clearWt(){
+  setF('weight',null);
+  const sl=document.getElementById('sl-wt');if(sl)sl.style.opacity='.35';
+  document.getElementById('wtv').textContent='— kg';
+}
+function toggleTag(id,el){
+  const log=data.dailyLogs.find(l=>l.date===today());if(!log)return;
+  if(!log.tags)log.tags=[];
+  const i=log.tags.indexOf(id);
+  if(i>=0)log.tags.splice(i,1);else log.tags.push(id);
+  const t=data.tagDefs.find(x=>x.id===id);if(!t)return;
+  const on=log.tags.includes(id);
+  el.className='chip'+(on?' on':'');
+  el.style.background=on?t.color:'';
+}
+function toggleSupp(id,el){
+  const log=data.dailyLogs.find(l=>l.date===today());if(!log)return;
+  if(!log.supplements)log.supplements={};
+  log.supplements[id]=!log.supplements[id];
+  el.classList.toggle('on',log.supplements[id]);
+}
+async function saveToday(){
+  const log=data.dailyLogs.find(l=>l.date===today());
+  if(log&&(log.sleep.quality===0||log.energy.level===0)){toast('请选择睡眠质量和精力状态');return}
+  await patchGist();renderToday();
 }
 
-function updateWeightSlider(el) {
-  const v = parseFloat(el.value);
-  document.getElementById('w-val').textContent = v + ' kg';
-  setField('weight', v);
-}
-
-function clearWeight() {
-  setField('weight', null);
-  const sl = document.getElementById('w-slider');
-  if (sl) { sl.style.opacity = '.4'; }
-  document.getElementById('w-val').textContent = '— kg';
-}
-
-function setTri(groupId, val, field) {
-  const container = document.getElementById(groupId);
-  if (!container) return;
-  const isEnergy = field.startsWith('energy');
-  const classes = isEnergy ? ENERGY_CLASSES : SLEEP_CLASSES;
-  container.querySelectorAll('.tri-btn').forEach((btn, i) => {
-    btn.className = 'tri-btn' + (i+1 === val ? ' ' + classes[i+1] : '');
-  });
-  setField(field, val);
-}
-
-function setField(field, val) {
-  const log = data.dailyLogs.find(l => l.date === today());
-  if (!log) return;
-  const parts = field.split('.');
-  if (parts.length === 2) log[parts[0]][parts[1]] = val;
-  else log[field] = val;
-}
-
-// ── Tag toggling ─────────────────────────────────────────────────────
-function toggleTag(tagId) {
-  const log = data.dailyLogs.find(l => l.date === today());
-  if (!log) return;
-  if (!log.tags) log.tags = [];
-  const idx = log.tags.indexOf(tagId);
-  if (idx >= 0) log.tags.splice(idx, 1);
-  else log.tags.push(tagId);
-  // update chip UI without full re-render
-  const tagDef = data.tagDefs.find(t => t.id === tagId);
-  if (!tagDef) return;
-  document.querySelectorAll('#tag-cloud .tag-chip').forEach(chip => {
-    if (chip.onclick && chip.onclick.toString().includes(`toggleTag(${tagId})`)) {
-      const active = log.tags.includes(tagId);
-      chip.className = 'tag-chip' + (active ? ' active' : '');
-      chip.style.background = active ? tagDef.color : '';
-    }
-  });
-}
-
-function openAddTag() {
-  openModal('新增自定义标签', `
+// add custom tag
+function openAddTag(){
+  openModal('新增自定义标签',`
     <div class="field"><label>标签名称</label>
-      <input type="text" id="new-tag-name" placeholder="例：冥想、高压日、头痛…" maxlength="12" />
-    </div>
-    <div class="field"><label>图标（可选，粘贴一个 emoji）</label>
-      <input type="text" id="new-tag-icon" placeholder="🌟" maxlength="4" />
-    </div>
+      <input type="text" id="nt-name" placeholder="冥想、高压日、头痛…" maxlength="12"/></div>
+    <div class="field"><label>图标（粘贴一个 emoji）</label>
+      <input type="text" id="nt-icon" placeholder="🌟" maxlength="4"/></div>
     <div class="field"><label>颜色</label>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;" id="color-picker">
-        ${['#2d7d55','#1a73e8','#e67e22','#e91e63','#9c27b0','#795548','#607d8b','#f44336'].map(c =>
-          `<div style="width:32px;height:32px;border-radius:50%;background:${c};cursor:pointer;border:3px solid transparent;"
-            onclick="selectColor('${c}',this)" data-color="${c}"></div>`
-        ).join('')}
-      </div>
-      <input type="hidden" id="new-tag-color" value="#2d7d55" />
-    </div>
-    <button class="btn btn-primary" onclick="submitAddTag()">添加标签</button>
-  `);
-  // select first color
-  setTimeout(() => {
-    const first = document.querySelector('#color-picker div');
-    if (first) first.style.borderColor = '#fff';
-  }, 50);
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="cp">
+        ${['#2d7d55','#1a73e8','#e67e22','#e91e63','#9c27b0','#795548','#607d8b','#f44336'].map((c,i)=>
+          `<div style="width:30px;height:30px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${i===0?'#fff':'transparent'}"
+            onclick="pickC('${c}',this)" data-c="${c}"></div>`).join('')}
+      </div><input type="hidden" id="nt-color" value="#2d7d55"/></div>
+    <button class="btn btn-p" onclick="submitTag()">添加</button>`);
+}
+function pickC(c,el){
+  document.querySelectorAll('#cp div').forEach(d=>d.style.borderColor='transparent');
+  el.style.borderColor='#fff';document.getElementById('nt-color').value=c;
+}
+function submitTag(){
+  const name=document.getElementById('nt-name').value.trim();
+  if(!name){toast('请填写名称');return}
+  const t={id:data.nextTagId++,name,icon:document.getElementById('nt-icon').value.trim()||'🏷️',color:document.getElementById('nt-color').value||'#607d8b'};
+  data.tagDefs.push(t);
+  const log=data.dailyLogs.find(l=>l.date===today());
+  if(log){if(!log.tags)log.tags=[];log.tags.push(t.id)}
+  closeModal();renderToday();
 }
 
-function selectColor(color, el) {
-  document.querySelectorAll('#color-picker div').forEach(d => d.style.borderColor = 'transparent');
-  el.style.borderColor = '#fff';
-  document.getElementById('new-tag-color').value = color;
-}
-
-function submitAddTag() {
-  const name  = document.getElementById('new-tag-name').value.trim();
-  if (!name) { toast('请填写标签名称'); return; }
-  const icon  = document.getElementById('new-tag-icon').value.trim() || '🏷️';
-  const color = document.getElementById('new-tag-color').value || '#607d8b';
-  const newTag = { id: data.nextTagId++, name, icon, color };
-  data.tagDefs.push(newTag);
-  // also add to today's log
-  const log = data.dailyLogs.find(l => l.date === today());
-  if (log) { if (!log.tags) log.tags = []; log.tags.push(newTag.id); }
-  closeModal();
-  renderToday();
-}
-
-function toggleSupp(id, el) {
-  const log = data.dailyLogs.find(l => l.date === today());
-  if (!log) return;
-  if (!log.supplements) log.supplements = {};
-  log.supplements[id] = !log.supplements[id];
-  el.classList.toggle('checked', log.supplements[id]);
-}
-
-async function saveToday() {
-  const log = data.dailyLogs.find(l => l.date === today());
-  if (log && (log.sleep.quality === 0 || log.energy.level === 0)) {
-    toast('请选择睡眠质量和精力状态'); return;
+// ── TAB 2: 日志 ──────────────────────────────────────────────────────
+function renderLogs(){
+  const sorted=[...data.dailyLogs].sort((a,b)=>b.date.localeCompare(a.date));
+  const addBtn=`<button class="btn btn-s" style="width:100%;margin-bottom:11px" onclick="openAddPastLog()">＋ 添加历史日志</button>`;
+  if(!sorted.length){
+    document.getElementById('logs-c').innerHTML=addBtn+`<div class="empty"><div class="ei">📋</div><p>还没有日志<br>在「今日」打卡后会出现在这里</p></div>`;return;
   }
-  await patchGist(); renderToday();
-}
-
-// ── TAB 2 — 日志历史 ──────────────────────────────────────────────────
-function renderLogs() {
-  const sorted = [...data.dailyLogs].sort((a,b) => b.date.localeCompare(a.date));
-  if (!sorted.length) {
-    document.getElementById('logs-content').innerHTML = `<div class="empty"><div class="empty-icon">📋</div><p>还没有日志<br>在「今日」打卡后会出现在这里</p></div>`;
-    return;
-  }
-  const html = sorted.map(log => {
-    const sq = log.sleep.quality;
-    const en = log.energy.level;
-    const rate = suppCompletionRate(log);
-    const sqLabel = sq ? SLEEP_LABELS[sq] || sq : '—';
-    const enLabel = en ? ENERGY_LABELS[en] || en : '—';
-    const weightTag = log.weight ? `<span class="log-tag" style="background:#f3e5f5;color:#7b1fa2;">⚖️ ${log.weight}kg</span>` : '';
-    const activeTags = (log.tags||[]).map(tid => {
-      const t = data.tagDefs.find(x => x.id === tid);
-      return t ? `<span class="log-tag" style="background:${t.color}22;color:${t.color};">${t.icon} ${escHtml(t.name)}</span>` : '';
-    }).join('');
-    return `<div class="log-item" onclick="openLogDetail(${log.id})">
-      <div class="log-date">${fmtDate(log.date)}<small>${log.date}</small></div>
-      <div class="log-meta">
-        <span class="log-tag tag-green">🌙 ${log.sleep.hoursSlept}h · ${sqLabel}</span>
-        <span class="log-tag tag-orange">⚡ ${enLabel}</span>
-        ${rate !== null ? `<span class="log-tag tag-blue">💊 ${rate}%</span>` : ''}
-        ${weightTag}${activeTags}
-      </div>
-    </div>`;
+  const rows=sorted.map(log=>{
+    const sq=log.sleep.quality,en=log.energy.level;
+    const rate=suppRate(log);
+    const wtag=log.weight?`<span class="lt" style="background:#f3e5f5;color:#7b1fa2">⚖️ ${log.weight}kg</span>`:'';
+    const ttags=(log.tags||[]).map(tid=>{const t=data.tagDefs.find(x=>x.id===tid);return t?`<span class="lt" style="background:${t.color}22;color:${t.color}">${t.icon} ${esc(t.name)}</span>`:''}).join('');
+    return `<div class="li" onclick="openDet(${log.id})">
+      <div class="li-date">${fmtD(log.date)}<small>${log.date}</small></div>
+      <div class="li-meta">
+        <span class="lt tg">🌙 ${log.sleep.hoursSlept}h · ${sq?SLQ[sq]:'—'}</span>
+        <span class="lt to">⚡ ${en?ENL[en]:'—'}</span>
+        ${rate!==null?`<span class="lt tb2">💊 ${rate}%</span>`:''}
+        ${wtag}${ttags}
+      </div></div>`;
   }).join('');
-  document.getElementById('logs-content').innerHTML = html;
+  document.getElementById('logs-c').innerHTML=addBtn+rows;
 }
 
-function openLogDetail(id) {
-  const log = data.dailyLogs.find(l => l.id === id);
-  if (!log) return;
-  currentDetailId = id;
-  document.getElementById('detail-title').textContent = log.date;
+// add past log
+function openAddPastLog(){
+  const yd=new Date();yd.setDate(yd.getDate()-1);
+  const def=yd.toISOString().slice(0,10);
+  const sqBtns=[1,2,3].map(v=>`<button class="tb" id="plsq${v}" onclick="setPLTri('pl-sq',${v},'sq')">${SLQ[v]}</button>`).join('');
+  const enBtns=[1,2,3].map(v=>`<button class="tb" id="plen${v}" onclick="setPLTri('pl-en',${v},'en')">${ENL[v]}</button>`).join('');
+  const tagChips=data.tagDefs.map(t=>`<span class="chip" data-tid="${t.id}" onclick="togglePLTag(${t.id},this)">${t.icon} ${esc(t.name)}</span>`).join('');
+  const suppRows=data.supplements.map(s=>`<div class="si" data-sid="${s.id}" onclick="this.classList.toggle('on')">
+    <div class="sc"></div><div class="si-info"><div class="si-name">${esc(s.name)}</div><div class="si-dose">${esc(s.dose)}</div></div></div>`).join('');
 
-  const sq = log.sleep.quality;
-  const en = log.energy.level;
-
-  const suppRows = data.supplements.map(s => {
-    const taken = log.supplements?.[s.id];
-    return `<div class="trend-row"><span class="trend-label">${escHtml(s.name)}</span>
-      <span class="trend-val" style="color:${taken?'var(--green)':'var(--text-muted)'}">${taken?'✓ 已服':'✗ 未服'}</span></div>`;
-  }).join('') || '<p style="font-size:13px;color:var(--text-muted);">无补剂记录</p>';
-
-  const tagList = (log.tags||[]).map(tid => {
-    const t = data.tagDefs.find(x => x.id === tid);
-    return t ? `<span class="tag-chip active" style="background:${t.color};font-size:12px;">${t.icon} ${escHtml(t.name)}</span>` : '';
-  }).join('') || '<span style="font-size:13px;color:var(--text-muted);">无</span>';
-
-  document.getElementById('detail-content').innerHTML = `
-    <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--green)"></span>睡眠</div>
-      <div class="trend-row"><span class="trend-label">时长</span><span class="trend-val">${log.sleep.hoursSlept} 小时</span></div>
-      <div class="trend-row"><span class="trend-label">质量</span><span class="trend-val">${sq ? SLEEP_LABELS[sq]||sq : '未记录'}</span></div>
-    </div>
-    <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--orange)"></span>精力</div>
-      <div class="trend-row"><span class="trend-label">状态</span><span class="trend-val">${en ? ENERGY_LABELS[en]||en : '未记录'}</span></div>
-    </div>
-    ${log.weight ? `<div class="card">
-      <div class="card-title"><span class="dot" style="background:#9c27b0"></span>体重</div>
-      <div class="trend-row"><span class="trend-label">体重</span><span class="trend-val">${log.weight} kg</span></div>
-    </div>` : ''}
-    <div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--blue)"></span>标签</div>
-      <div style="display:flex;flex-wrap:wrap;gap:7px;padding-top:4px;">${tagList}</div>
-    </div>
-    ${data.supplements.length ? `<div class="card">
-      <div class="card-title"><span class="dot" style="background:var(--blue)"></span>补剂</div>
-      ${suppRows}
-    </div>` : ''}
-    <button class="btn btn-danger" style="width:100%;margin-top:6px;" onclick="deleteLog(${log.id})">🗑 删除此记录</button>
-  `;
-  document.getElementById('detail-overlay').classList.add('open');
-}
-
-function closeDetail() {
-  document.getElementById('detail-overlay').classList.remove('open');
-  currentDetailId = null;
-}
-
-function editCurrentDetail() {
-  if (!currentDetailId) return;
-  const log = data.dailyLogs.find(l => l.id === currentDetailId);
-  if (!log) return;
-  closeDetail();
-  openLogEditModal(log);
-}
-
-function openLogEditModal(log) {
-  const sqBtns = [1,2,3].map(v => {
-    const sel = log.sleep.quality === v ? SLEEP_CLASSES[v] : '';
-    return `<button class="tri-btn ${sel}" onclick="setTriLog(${log.id},'edit-sq',${v},'sleep.quality')">${SLEEP_LABELS[v]}</button>`;
-  }).join('');
-  const enBtns = [1,2,3].map(v => {
-    const sel = log.energy.level === v ? ENERGY_CLASSES[v] : '';
-    return `<button class="tri-btn ${sel}" onclick="setTriLog(${log.id},'edit-en',${v},'energy.level')">${ENERGY_LABELS[v]}</button>`;
-  }).join('');
-  const suppRows = data.supplements.map(s => {
-    const checked = log.supplements?.[s.id];
-    return `<div class="supp-item ${checked?'checked':''}" onclick="toggleSuppInModal(${s.id},${log.id},this)">
-      <div class="supp-check"></div>
-      <div class="supp-info"><div class="supp-name">${escHtml(s.name)}</div><div class="supp-dose">${escHtml(s.dose)}</div></div>
-    </div>`;
-  }).join('');
-
-  openModal(`编辑 · ${log.date}`, `
+  openModal('添加历史日志',`
+    <div class="field"><label>日期</label>
+      <input type="date" id="pl-date" value="${def}" max="${today()}"/></div>
     <div class="field"><label>睡眠时长</label>
-      <div class="slider-wrap">
-        <input type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}" id="edit-sl"
-          oninput="document.getElementById('edit-sl-v').textContent=this.value+'h'; updateLogField(${log.id},'sleep.hoursSlept',parseFloat(this.value))" />
-        <span class="slider-val" id="edit-sl-v">${log.sleep.hoursSlept}h</span>
+      <div class="sl-wrap">
+        <input id="sl-pl" type="range" min="0" max="12" step="0.5" value="7"
+          oninput="document.getElementById('pl-slv').textContent=this.value+'h'"/>
+        <span class="sl-val" id="pl-slv">7h</span>
       </div>
-      <div class="slider-ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span></div>
+      <div class="sl-ticks" data-for="sl-pl">
+        <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span>
+      </div></div>
+    <div class="field"><label>睡眠质量</label><div class="tri" id="pl-sq">${sqBtns}</div></div>
+    <div class="field"><label>精力</label><div class="tri" id="pl-en">${enBtns}</div></div>
+    <div class="field"><label>体重（可选）</label>
+      <input type="number" id="pl-wt" step="0.5" min="45" max="60" placeholder="留空则不记录"/></div>
+    ${tagChips?`<div class="field"><label>标签</label><div class="tag-cloud">${tagChips}</div></div>`:''}
+    ${suppRows?`<div class="field"><label>补剂</label><div class="sl-list">${suppRows}</div></div>`:''}
+    <button class="btn btn-p" onclick="submitPastLog()">保存历史日志</button>`);
+  setTimeout(alignTicks,50);
+}
+
+let _plSQ=0,_plEN=0,_plTags=[];
+function setPLTri(gId,val,which){
+  const g=document.getElementById(gId);if(!g)return;
+  const cls=which==='en'?ENC:SLC;
+  g.querySelectorAll('.tb').forEach((b,i)=>{b.className='tb'+(i+1===val?' '+cls[i+1]:'')});
+  if(which==='sq')_plSQ=val;else _plEN=val;
+}
+function togglePLTag(id,el){
+  const i=_plTags.indexOf(id);
+  if(i>=0){_plTags.splice(i,1);el.className='chip';el.style.background=''}
+  else{_plTags.push(id);const t=data.tagDefs.find(x=>x.id===id);el.className='chip on';el.style.background=t?t.color:''}
+}
+async function submitPastLog(){
+  _plSQ=0;_plEN=0;_plTags=[];
+  const sq=parseInt(document.querySelector('#pl-sq .tb.bad,#pl-sq .tb.ok,#pl-sq .tb.good')?.dataset?.val||0);
+  // re-read from class
+  let sq2=0,en2=0;
+  document.querySelectorAll('#pl-sq .tb').forEach((b,i)=>{if(b.classList.contains('bad')||b.classList.contains('ok')||b.classList.contains('good'))sq2=i+1});
+  document.querySelectorAll('#pl-en .tb').forEach((b,i)=>{if(b.classList.contains('bad')||b.classList.contains('ok')||b.classList.contains('good'))en2=i+1});
+  const tags=[...document.querySelectorAll('#m-body .chip.on[data-tid]')].map(el=>parseInt(el.dataset.tid));
+  const supps={};
+  document.querySelectorAll('#m-body .si.on[data-sid]').forEach(el=>supps[parseInt(el.dataset.sid)]=true);
+  const dateVal=document.getElementById('pl-date').value;
+  if(!dateVal){toast('请选择日期');return}
+  if(data.dailyLogs.find(l=>l.date===dateVal)){toast('该日期已有记录，请从日志列表编辑');return}
+  const wtStr=document.getElementById('pl-wt').value;
+  const log={id:data.nextLogId++,date:dateVal,
+    sleep:{hoursSlept:parseFloat(document.getElementById('sl-pl').value),quality:sq2},
+    energy:{level:en2},weight:wtStr?parseFloat(wtStr):null,tags,supplements:supps};
+  data.dailyLogs.push(log);
+  await patchGist();closeModal();renderLogs();renderToday();
+}
+
+// log detail
+function openDet(id){
+  const log=data.dailyLogs.find(l=>l.id===id);if(!log)return;
+  curDetId=id;
+  document.getElementById('det-title').textContent=log.date;
+  const sq=log.sleep.quality,en=log.energy.level;
+  const suppRows=data.supplements.map(s=>{
+    const tk=log.supplements?.[s.id];
+    return `<div class="tr"><span class="tr-l">${esc(s.name)}</span>
+      <span class="tr-v" style="color:${tk?'var(--g)':'var(--txm)'}">${tk?'✓ 已服':'✗ 未服'}</span></div>`;
+  }).join('')||'<p style="font-size:12px;color:var(--txm)">无补剂记录</p>';
+  const tagList=(log.tags||[]).map(tid=>{const t=data.tagDefs.find(x=>x.id===tid);return t?`<span class="chip on" style="background:${t.color};font-size:12px">${t.icon} ${esc(t.name)}</span>`:''}).join('')||'<span style="font-size:12px;color:var(--txm)">无</span>';
+  document.getElementById('det-body').innerHTML=`
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--g)"></span>睡眠</div>
+      <div class="tr"><span class="tr-l">时长</span><span class="tr-v">${log.sleep.hoursSlept} 小时</span></div>
+      <div class="tr"><span class="tr-l">质量</span><span class="tr-v">${sq?SLQ[sq]:'未记录'}</span></div>
     </div>
-    <div class="field"><label>睡眠质量</label><div class="tri-group" id="edit-sq">${sqBtns}</div></div>
-    <div class="field"><label>精力</label><div class="tri-group" id="edit-en">${enBtns}</div></div>
-    ${suppRows ? `<div class="field"><label>补剂</label><div class="supp-list">${suppRows}</div></div>` : ''}
-    <button class="btn btn-primary" onclick="saveLogEdit(${log.id})">保存修改</button>
-  `);
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--o)"></span>精力</div>
+      <div class="tr"><span class="tr-l">状态</span><span class="tr-v">${en?ENL[en]:'未记录'}</span></div>
+    </div>
+    ${log.weight?`<div class="card"><div class="card-title"><span class="dot" style="background:#9c27b0"></span>体重</div>
+      <div class="tr"><span class="tr-l">体重</span><span class="tr-v">${log.weight} kg</span></div></div>`:''}
+    <div class="card"><div class="card-title"><span class="dot" style="background:var(--b)"></span>标签</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;padding-top:4px">${tagList}</div></div>
+    ${data.supplements.length?`<div class="card"><div class="card-title"><span class="dot" style="background:var(--b)"></span>补剂</div>${suppRows}</div>`:''}
+    <button class="btn btn-d" style="width:100%;margin-top:6px" onclick="delLog(${log.id})">🗑 删除此记录</button>`;
+  document.getElementById('det').classList.add('open');
 }
-
-function setTriLog(logId, groupId, val, field) {
-  const container = document.getElementById(groupId);
-  if (!container) return;
-  const isEnergy = field.startsWith('energy');
-  const classes = isEnergy ? ENERGY_CLASSES : SLEEP_CLASSES;
-  container.querySelectorAll('.tri-btn').forEach((btn, i) => {
-    btn.className = 'tri-btn' + (i+1 === val ? ' ' + classes[i+1] : '');
-  });
-  updateLogField(logId, field, val);
-}
-
-function updateLogField(id, field, val) {
-  const log = data.dailyLogs.find(l => l.id === id);
-  if (!log) return;
-  const parts = field.split('.');
-  if (parts.length === 2) log[parts[0]][parts[1]] = val;
-  else log[field] = val;
-}
-
-function toggleSuppInModal(suppId, logId, el) {
-  const log = data.dailyLogs.find(l => l.id === logId);
-  if (!log) return;
-  if (!log.supplements) log.supplements = {};
-  log.supplements[suppId] = !log.supplements[suppId];
-  el.classList.toggle('checked', log.supplements[suppId]);
-}
-
-async function saveLogEdit(id) {
-  await patchGist(); closeModal(); renderLogs(); renderToday();
-}
-
-async function deleteLog(id) {
-  if (!confirm('确认删除这条日志？')) return;
-  data.dailyLogs = data.dailyLogs.filter(l => l.id !== id);
-  await patchGist(); closeDetail(); renderLogs(); renderToday();
-}
-
-// ── TAB 3 — 检测 ─────────────────────────────────────────────────────
-function renderLab() {
-  const sorted = [...data.labResults].sort((a,b) => b.date.localeCompare(a.date));
-  const addBtn = `<button class="btn btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openAddLab()">＋ 添加检测记录</button>`;
-  if (!sorted.length) {
-    document.getElementById('lab-content').innerHTML = addBtn + `<div class="empty"><div class="empty-icon">🧪</div><p>还没有检测记录<br>添加你的甲状腺功能报告</p></div>`;
-    return;
-  }
-  const cards = sorted.map(lab => {
-    const vals = Object.entries(lab.values||{}).map(([k,v]) => {
-      const out = v.refLow !== undefined && (v.value < v.refLow || v.value > v.refHigh);
-      return `<div class="lab-val ${out?'out':''}">
-        <div class="lab-val-name">${k}</div>
-        <div class="lab-val-num">${v.value}<span class="lab-val-unit"> ${v.unit||''}</span></div>
-        ${v.refLow !== undefined ? `<div class="lab-val-ref">${v.refLow}–${v.refHigh}</div>` : ''}
-      </div>`;
-    }).join('');
-    return `<div class="lab-card">
-      <div class="lab-header">
-        <div><div class="lab-date">${lab.date}</div><div class="lab-lab">${lab.lab||''}</div></div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span class="lab-type">${lab.type||'检测'}</span>
-          <button class="btn btn-sm btn-danger" onclick="deleteLab(${lab.id})">✕</button>
-        </div>
+function closeDet(){document.getElementById('det').classList.remove('open');curDetId=null;}
+function editCurDet(){if(!curDetId)return;const log=data.dailyLogs.find(l=>l.id===curDetId);if(!log)return;closeDet();openEditLog(log);}
+function openEditLog(log){
+  const sqBtns=[1,2,3].map(v=>`<button class="tb ${log.sleep.quality===v?SLC[v]:''}" onclick="setELTri('esq',${v},'sq')">${SLQ[v]}</button>`).join('');
+  const enBtns=[1,2,3].map(v=>`<button class="tb ${log.energy.level===v?ENC[v]:''}" onclick="setELTri('een',${v},'en')">${ENL[v]}</button>`).join('');
+  const suppRows=data.supplements.map(s=>{
+    const ch=log.supplements?.[s.id];
+    return `<div class="si${ch?' on':''}" data-sid="${s.id}" onclick="this.classList.toggle('on')">
+      <div class="sc"></div><div class="si-info"><div class="si-name">${esc(s.name)}</div><div class="si-dose">${esc(s.dose)}</div></div></div>`;
+  }).join('');
+  const tagChips=data.tagDefs.map(t=>{
+    const on=(log.tags||[]).includes(t.id);
+    return `<span class="chip${on?' on':''}" data-tid="${t.id}" style="${on?'background:'+t.color+';':''}" onclick="toggleELTag(${t.id},this)">${t.icon} ${esc(t.name)}</span>`;
+  }).join('');
+  openModal(`编辑 · ${log.date}`,`
+    <div class="field"><label>睡眠时长</label>
+      <div class="sl-wrap">
+        <input id="el-sl" type="range" min="0" max="12" step="0.5" value="${log.sleep.hoursSlept}"
+          oninput="document.getElementById('el-slv').textContent=this.value+'h'"/>
+        <span class="sl-val" id="el-slv">${log.sleep.hoursSlept}h</span>
       </div>
-      <div class="lab-values">${vals}</div>
-      ${lab.note ? `<div class="lab-note">📝 ${escHtml(lab.note)}</div>` : ''}
+      <div class="sl-ticks" data-for="el-sl">
+        <span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span>
+      </div></div>
+    <div class="field"><label>睡眠质量</label><div class="tri" id="esq">${sqBtns}</div></div>
+    <div class="field"><label>精力</label><div class="tri" id="een">${enBtns}</div></div>
+    <div class="field"><label>体重（kg）</label>
+      <input type="number" id="el-wt" step="0.5" min="45" max="60" value="${log.weight||''}" placeholder="留空则不记录"/></div>
+    ${tagChips?`<div class="field"><label>标签</label><div class="tag-cloud">${tagChips}</div></div>`:''}
+    ${suppRows?`<div class="field"><label>补剂</label><div class="sl-list">${suppRows}</div></div>`:''}
+    <button class="btn btn-p" onclick="saveEditLog(${log.id})">保存修改</button>`);
+  setTimeout(alignTicks,50);
+}
+function setELTri(gId,val,which){
+  const g=document.getElementById(gId);if(!g)return;
+  const cls=which==='en'?ENC:SLC;
+  g.querySelectorAll('.tb').forEach((b,i)=>{b.className='tb'+(i+1===val?' '+cls[i+1]:'')});
+}
+function toggleELTag(id,el){
+  const t=data.tagDefs.find(x=>x.id===id);
+  const on=el.classList.toggle('on');
+  el.style.background=on&&t?t.color:'';
+}
+async function saveEditLog(id){
+  const log=data.dailyLogs.find(l=>l.id===id);if(!log)return;
+  let sq=0,en=0;
+  document.querySelectorAll('#esq .tb').forEach((b,i)=>{if(b.classList.contains('bad')||b.classList.contains('ok')||b.classList.contains('good'))sq=i+1});
+  document.querySelectorAll('#een .tb').forEach((b,i)=>{if(b.classList.contains('bad')||b.classList.contains('ok')||b.classList.contains('good'))en=i+1});
+  log.sleep.hoursSlept=parseFloat(document.getElementById('el-sl').value);
+  log.sleep.quality=sq;log.energy.level=en;
+  const wtStr=document.getElementById('el-wt').value;
+  log.weight=wtStr?parseFloat(wtStr):null;
+  log.tags=[...document.querySelectorAll('#m-body .chip.on[data-tid]')].map(el=>parseInt(el.dataset.tid));
+  const supps={};
+  document.querySelectorAll('#m-body .si.on[data-sid]').forEach(el=>supps[parseInt(el.dataset.sid)]=true);
+  log.supplements=supps;
+  await patchGist();closeModal();renderLogs();renderToday();
+}
+async function delLog(id){
+  if(!confirm('确认删除这条日志？'))return;
+  data.dailyLogs=data.dailyLogs.filter(l=>l.id!==id);
+  await patchGist();closeDet();renderLogs();renderToday();
+}
+
+// ── TAB 3: 总结 ──────────────────────────────────────────────────────
+function renderSummary(){
+  const logs=[...data.dailyLogs].sort((a,b)=>a.date.localeCompare(b.date));
+  if(logs.length<2){
+    document.getElementById('sum-c').innerHTML=`<div class="empty"><div class="ei">📊</div><p>至少需要 2 天数据<br>才能生成趋势图</p></div>`;return;
+  }
+
+  // Build date range: last 14 days
+  const last14=[];
+  for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);last14.push(d.toISOString().slice(0,10));}
+  const logMap=Object.fromEntries(logs.map(l=>[l.date,l]));
+  const series14=last14.map(d=>logMap[d]||null);
+  const xLb14=last14.map(d=>d.slice(5).replace('-','/'));
+
+  // Sleep hours chart
+  const sleepH=series14.map(l=>l?{y:l.sleep.hoursSlept}:{y:null});
+  const sleepQ=series14.map(l=>l&&l.sleep.quality?{y:l.sleep.quality}:{y:null});
+  // Energy chart
+  const energySeries=series14.map(l=>l&&l.energy.level?{y:l.energy.level}:{y:null});
+  // Weight chart (use all logs with weight)
+  const wtLogs=logs.filter(l=>l.weight!==null&&l.weight!==undefined);
+
+  // Period prediction
+  const periodTag=data.tagDefs.find(t=>t.name==='经期')||data.tagDefs.find(t=>t.id===1);
+  const periodInfo=periodTag?analyzePeriod(periodTag.id):null;
+
+  // Tag stats (last 30 days)
+  const cutoff=new Date();cutoff.setDate(cutoff.getDate()-30);
+  const cutStr=cutoff.toISOString().slice(0,10);
+  const recentLogs=logs.filter(l=>l.date>=cutStr);
+  const tagCounts={};
+  recentLogs.forEach(l=>(l.tags||[]).forEach(tid=>{tagCounts[tid]=(tagCounts[tid]||0)+1;}));
+  const maxCount=Math.max(...Object.values(tagCounts),1);
+
+  document.getElementById('sum-c').innerHTML=`
+    <div class="card sum-section">
+      <div class="card-title"><span class="dot" style="background:var(--g)"></span>睡眠时长（近 14 天）</div>
+      <div class="chart-wrap">${lineChart(sleepH,xLb14,{minY:0,maxY:12,yTicks:[0,4,8,12],color:'#2d7d55',fmtY:v=>v+'h'})}</div>
+    </div>
+    <div class="card sum-section">
+      <div class="card-title"><span class="dot" style="background:#9c27b0"></span>睡眠质量（近 14 天）</div>
+      <div class="chart-wrap">${barChart(sleepQ,xLb14,{colors:{1:'#d93025',2:'#e67e22',3:'#2d7d55'},labels:{1:'很差',2:'一般',3:'不错'},maxY:3})}</div>
+    </div>
+    <div class="card sum-section">
+      <div class="card-title"><span class="dot" style="background:var(--o)"></span>精力（近 14 天）</div>
+      <div class="chart-wrap">${barChart(energySeries,xLb14,{colors:{1:'#d93025',2:'#e67e22',3:'#2d7d55'},labels:{1:'萎靡',2:'一般',3:'充沛'},maxY:3})}</div>
+    </div>
+    ${wtLogs.length>=2?`<div class="card sum-section">
+      <div class="card-title"><span class="dot" style="background:#9c27b0"></span>体重趋势</div>
+      <div class="chart-wrap">${lineChart(wtLogs.map(l=>({y:l.weight})),wtLogs.map(l=>l.date.slice(5).replace('-','/')),
+        {minY:Math.floor(Math.min(...wtLogs.map(l=>l.weight))-1),maxY:Math.ceil(Math.max(...wtLogs.map(l=>l.weight))+1),
+        yTicks:genYTicks(Math.floor(Math.min(...wtLogs.map(l=>l.weight))-1),Math.ceil(Math.max(...wtLogs.map(l=>l.weight))+1)),
+        color:'#9c27b0',fmtY:v=>v+'kg'})}</div></div>`:''}
+    ${periodInfo?`<div class="card sum-section">
+      <div class="card-title"><span class="dot" style="background:#e91e63"></span>经期分析</div>
+      ${renderPeriodInfo(periodInfo)}</div>`:''}
+    ${Object.keys(tagCounts).length?`<div class="card sum-section">
+      <div class="card-title"><span class="dot" style="background:var(--b)"></span>标签统计（近 30 天）</div>
+      ${renderTagStats(tagCounts,maxCount)}</div>`:''}
+  `;
+}
+
+function genYTicks(min,max){
+  const range=max-min;const step=range<=4?1:range<=8?2:5;
+  const ticks=[];for(let v=Math.ceil(min/step)*step;v<=max;v+=step)ticks.push(v);return ticks;
+}
+
+// SVG line chart
+function lineChart(series,xLbs,{minY,maxY,yTicks,color,fmtY}){
+  const n=series.length;if(!n)return '<p style="color:var(--txm);text-align:center;padding:20px;font-size:13px">数据不足</p>';
+  const VW=340,VH=130,PL=36,PR=8,PT=10,PB=26;
+  const W=VW-PL-PR,H=VH-PT-PB;
+  const sx=i=>PL+(n>1?i/(n-1):0.5)*W;
+  const sy=v=>PT+H-(v-minY)/(maxY-minY)*H;
+  const grid=yTicks.map(t=>`<line x1="${PL}" y1="${sy(t).toFixed(1)}" x2="${VW-PR}" y2="${sy(t).toFixed(1)}" stroke="#eee" stroke-width="1"/>
+    <text x="${PL-4}" y="${(sy(t)+3.5).toFixed(1)}" text-anchor="end" font-size="9" fill="#aaa">${fmtY?fmtY(t):t}</text>`).join('');
+  const step=Math.max(1,Math.ceil(n/7));
+  const xlb=xLbs.map((lb,i)=>i%step===0||i===n-1?`<text x="${sx(i).toFixed(1)}" y="${VH-2}" text-anchor="middle" font-size="8" fill="#aaa">${lb}</text>`:'').join('');
+  let d='';let inp=false;
+  series.forEach((s,i)=>{if(s.y===null||s.y===undefined){inp=false;return}
+    const x=sx(i).toFixed(1),y=sy(s.y).toFixed(1);d+=inp?`L${x} ${y}`:`M${x} ${y}`;inp=true;});
+  const dots=series.map((s,i)=>s.y!==null&&s.y!==undefined?`<circle cx="${sx(i).toFixed(1)}" cy="${sy(s.y).toFixed(1)}" r="3" fill="${color}"/>`:'').join('');
+  return `<svg viewBox="0 0 ${VW} ${VH}" style="width:100%;height:auto">
+    <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT+H}" stroke="#ddd" stroke-width="1"/>
+    <line x1="${PL}" y1="${PT+H}" x2="${VW-PR}" y2="${PT+H}" stroke="#ddd" stroke-width="1"/>
+    ${grid}${xlb}
+    ${d?`<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`:''}
+    ${dots}</svg>`;
+}
+
+// SVG bar chart
+function barChart(series,xLbs,{colors,labels,maxY}){
+  const n=series.length;if(!n)return '';
+  const VW=340,VH=100,PL=8,PR=8,PT=8,PB=26;
+  const W=VW-PL-PR,H=VH-PT-PB;
+  const bw=Math.max(2,(W/n)-2);
+  const cx=i=>PL+(i+0.5)*(W/n);
+  const step=Math.max(1,Math.ceil(n/7));
+  const xlb=xLbs.map((lb,i)=>i%step===0||i===n-1?`<text x="${cx(i).toFixed(1)}" y="${VH-2}" text-anchor="middle" font-size="8" fill="#aaa">${lb}</text>`:'').join('');
+  const bars=series.map((s,i)=>{
+    if(!s.y)return '';
+    const bh=(s.y/maxY)*H;const c=colors[s.y]||'#aaa';
+    return `<rect x="${(cx(i)-bw/2).toFixed(1)}" y="${(PT+H-bh).toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="2" fill="${c}" opacity=".85"/>`;
+  }).join('');
+  // legend
+  const legend=Object.entries(labels).map(([v,lb])=>`<tspan fill="${colors[v]||'#aaa'}">■${lb} </tspan>`).join('');
+  return `<svg viewBox="0 0 ${VW} ${VH}" style="width:100%;height:auto">
+    ${xlb}${bars}
+    <text x="${PL}" y="${PT+6}" font-size="8">${legend}</text></svg>`;
+}
+
+// Period analysis
+function analyzePeriod(tagId){
+  const pDates=data.dailyLogs.filter(l=>l.tags&&l.tags.includes(tagId)).map(l=>l.date).sort();
+  if(!pDates.length)return null;
+  const periods=[];let cur=[pDates[0]];
+  for(let i=1;i<pDates.length;i++){
+    const diff=(new Date(pDates[i]+'T00:00:00')-new Date(pDates[i-1]+'T00:00:00'))/86400000;
+    if(diff<=2)cur.push(pDates[i]);else{periods.push(cur);cur=[pDates[i]];}
+  }
+  periods.push(cur);
+  const starts=periods.map(p=>p[0]);
+  if(starts.length<2)return{starts,avgCycle:null,next:null};
+  const gaps=[];
+  for(let i=1;i<starts.length;i++)gaps.push((new Date(starts[i]+'T00:00:00')-new Date(starts[i-1]+'T00:00:00'))/86400000);
+  const avg=Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length);
+  const last=new Date(starts[starts.length-1]+'T00:00:00');
+  last.setDate(last.getDate()+avg);
+  return{starts,avgCycle:avg,next:last.toISOString().slice(0,10)};
+}
+
+function renderPeriodInfo(info){
+  const now=today();
+  const rows=info.starts.slice(-4).map(s=>`<div class="tr"><span class="tr-l">经期开始</span><span class="tr-v">${s}</span></div>`).join('');
+  const nextColor=info.next&&info.next<=now?'var(--r)':info.next?'var(--b)':'var(--txm)';
+  return `${rows}
+    ${info.avgCycle?`<div class="tr"><span class="tr-l">平均周期</span><span class="tr-v">${info.avgCycle} 天</span></div>`:''}
+    ${info.next?`<div class="tr"><span class="tr-l">预测下次</span><span class="tr-v" style="color:${nextColor}">${info.next}${info.next<=now?' (已到)':''}</span></div>`:''}`;
+}
+
+function renderTagStats(tagCounts,maxCount){
+  return Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).map(([tid,cnt])=>{
+    const t=data.tagDefs.find(x=>x.id===parseInt(tid));if(!t)return'';
+    const pct=Math.round(cnt/maxCount*100);
+    return `<div class="tag-stat">
+      <span style="min-width:80px;font-size:13px">${t.icon} ${esc(t.name)}</span>
+      <div class="tag-bar-bg"><div class="tag-bar-fill" style="width:${pct}%;background:${t.color}"></div></div>
+      <span style="min-width:28px;text-align:right;font-size:12px;color:var(--txm)">${cnt}次</span>
     </div>`;
   }).join('');
-  document.getElementById('lab-content').innerHTML = addBtn + cards;
 }
 
-function openAddLab() {
-  const std = [
-    {key:'TSH',    unit:'mIU/L', lo:0.4, hi:4.0},
-    {key:'FT4',    unit:'ng/dL', lo:0.8, hi:1.8},
-    {key:'FT3',    unit:'pg/mL', lo:2.3, hi:4.2},
-    {key:'TPO-Ab', unit:'IU/mL', lo:0,   hi:35 },
-    {key:'Tg-Ab',  unit:'IU/mL', lo:0,   hi:20 },
-  ];
-  const rows = std.map(m => `<div class="lab-marker-row">
-    <div class="lab-marker-name">${m.key}</div>
-    <input type="number" step="any" placeholder="数值" id="lab-m-${m.key}" style="flex:1;min-width:0;padding:8px;" />
-    <span style="font-size:12px;color:var(--text-muted);min-width:52px;text-align:right;">${m.unit}</span>
-  </div>`).join('');
-  openModal('添加检测记录', `
-    <div class="field"><label>日期</label><input type="date" id="lab-date" value="${today()}" /></div>
+// ── TAB 4: 检测 ──────────────────────────────────────────────────────
+function renderLab(){
+  const sorted=[...data.labResults].sort((a,b)=>b.date.localeCompare(a.date));
+  const addBtn=`<button class="btn btn-s" style="width:100%;margin-bottom:11px" onclick="openAddLab()">＋ 添加检测记录</button>`;
+  if(!sorted.length){document.getElementById('lab-c').innerHTML=addBtn+`<div class="empty"><div class="ei">🧪</div><p>还没有检测记录<br>添加甲状腺功能报告</p></div>`;return}
+  const cards=sorted.map(lab=>{
+    const vals=Object.entries(lab.values||{}).map(([k,v])=>{
+      const out=v.refLow!==undefined&&(v.value<v.refLow||v.value>v.refHigh);
+      return `<div class="lv${out?' out':''}"><div class="lv-n">${k}</div>
+        <div class="lv-v">${v.value}<span class="lv-u"> ${v.unit||''}</span></div>
+        ${v.refLow!==undefined?`<div class="lv-r">${v.refLow}–${v.refHigh}</div>`:''}</div>`;
+    }).join('');
+    return `<div class="lab-card"><div class="lab-hdr">
+      <div><div class="lab-dt">${lab.date}</div><div class="lab-lb">${lab.lab||''}</div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span class="lab-tp">${lab.type||'检测'}</span>
+        <button class="btn btn-sm btn-d" onclick="delLab(${lab.id})">✕</button>
+      </div></div>
+      <div class="lab-vals">${vals}</div>
+      ${lab.note?`<div class="lab-note">📝 ${esc(lab.note)}</div>`:''}</div>`;
+  }).join('');
+  document.getElementById('lab-c').innerHTML=addBtn+cards;
+}
+function openAddLab(){
+  const std=[{k:'TSH',u:'mIU/L',lo:.4,hi:4},{k:'FT4',u:'ng/dL',lo:.8,hi:1.8},{k:'FT3',u:'pg/mL',lo:2.3,hi:4.2},{k:'TPO-Ab',u:'IU/mL',lo:0,hi:35},{k:'Tg-Ab',u:'IU/mL',lo:0,hi:20}];
+  const rows=std.map(m=>`<div class="lmr"><div class="lmn">${m.k}</div>
+    <input type="number" step="any" placeholder="数值" id="lm-${m.k}" style="flex:1;padding:7px"/>
+    <span style="font-size:11px;color:var(--txm);min-width:48px;text-align:right">${m.u}</span></div>`).join('');
+  openModal('添加检测记录',`
+    <div class="field"><label>日期</label><input type="date" id="l-dt" value="${today()}"/></div>
     <div class="field"><label>类型</label>
-      <select id="lab-type"><option>甲状腺功能</option><option>抗体</option><option>全血</option><option>其他</option></select>
-    </div>
-    <div class="field"><label>医院</label><input type="text" id="lab-lab" placeholder="UCLA Health" /></div>
+      <select id="l-tp"><option>甲状腺功能</option><option>抗体</option><option>全血</option><option>其他</option></select></div>
+    <div class="field"><label>医院</label><input type="text" id="l-lb" placeholder="UCLA Health"/></div>
     <div class="field"><label>检测值（只填有结果的）</label>${rows}</div>
-    <div class="field"><label>自定义指标</label>
-      <div id="custom-markers"></div>
-      <button class="btn btn-sm btn-secondary" style="margin-top:7px;" onclick="addCustomMarker()">＋ 添加</button>
-    </div>
-    <div class="field"><label>备注</label><textarea id="lab-note" placeholder="TSH 较上次下降…"></textarea></div>
-    <button class="btn btn-primary" onclick="submitLab()">保存</button>
-  `);
+    <div class="field"><label>自定义指标</label><div id="cm"></div>
+      <button class="btn btn-sm btn-s" style="margin-top:6px" onclick="addCM()">＋ 添加</button></div>
+    <div class="field"><label>备注</label><textarea id="l-note" placeholder="TSH 较上次下降…"></textarea></div>
+    <button class="btn btn-p" onclick="submitLab()">保存</button>`);
 }
-
-let cmCount = 0;
-function addCustomMarker() {
-  cmCount++;
-  const id = cmCount;
-  const row = document.createElement('div');
-  row.className = 'lab-marker-row'; row.id = `cm-${id}`;
-  row.innerHTML = `
-    <input type="text" placeholder="名称" id="cm-n-${id}" style="width:76px;padding:8px;" />
-    <input type="number" step="any" placeholder="数值" id="cm-v-${id}" style="flex:1;padding:8px;" />
-    <input type="text" placeholder="单位" id="cm-u-${id}" style="width:56px;padding:8px;" />
-    <button onclick="document.getElementById('cm-${id}').remove()" style="background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;">✕</button>`;
-  document.getElementById('custom-markers').appendChild(row);
+let _cmc=0;
+function addCM(){
+  _cmc++;const id=_cmc;
+  const row=document.createElement('div');row.className='lmr';row.id=`cm-${id}`;
+  row.innerHTML=`<input type="text" placeholder="名称" id="cn-${id}" style="width:70px;padding:7px"/>
+    <input type="number" step="any" placeholder="数值" id="cv-${id}" style="flex:1;padding:7px"/>
+    <input type="text" placeholder="单位" id="cu-${id}" style="width:52px;padding:7px"/>
+    <button onclick="document.getElementById('cm-${id}').remove()" style="background:none;border:none;color:var(--r);font-size:17px;cursor:pointer">✕</button>`;
+  document.getElementById('cm').appendChild(row);
 }
-
-async function submitLab() {
-  const refs = { TSH:{unit:'mIU/L',refLow:0.4,refHigh:4.0}, FT4:{unit:'ng/dL',refLow:0.8,refHigh:1.8},
-    FT3:{unit:'pg/mL',refLow:2.3,refHigh:4.2}, 'TPO-Ab':{unit:'IU/mL',refLow:0,refHigh:35}, 'Tg-Ab':{unit:'IU/mL',refLow:0,refHigh:20} };
-  const values = {};
-  Object.keys(refs).forEach(m => {
-    const el = document.getElementById('lab-m-' + m);
-    if (el && el.value !== '') values[m] = { value: parseFloat(el.value), ...refs[m] };
+async function submitLab(){
+  const refs={TSH:{unit:'mIU/L',refLow:.4,refHigh:4},FT4:{unit:'ng/dL',refLow:.8,refHigh:1.8},
+    FT3:{unit:'pg/mL',refLow:2.3,refHigh:4.2},'TPO-Ab':{unit:'IU/mL',refLow:0,refHigh:35},'Tg-Ab':{unit:'IU/mL',refLow:0,refHigh:20}};
+  const vals={};
+  Object.keys(refs).forEach(m=>{const el=document.getElementById('lm-'+m);if(el&&el.value!=='')vals[m]={value:parseFloat(el.value),...refs[m]}});
+  document.querySelectorAll('#cm [id^="cm-"]').forEach(row=>{
+    const id=row.id.replace('cm-','');
+    const n=document.getElementById('cn-'+id)?.value?.trim();
+    const v=document.getElementById('cv-'+id)?.value;
+    const u=document.getElementById('cu-'+id)?.value?.trim();
+    if(n&&v)vals[n]={value:parseFloat(v),unit:u||''};
   });
-  document.querySelectorAll('[id^="cm-"]').forEach(row => {
-    if (!row.id.match(/^cm-\d+$/)) return;
-    const id = row.id.replace('cm-','');
-    const n = document.getElementById('cm-n-'+id)?.value?.trim();
-    const v = document.getElementById('cm-v-'+id)?.value;
-    const u = document.getElementById('cm-u-'+id)?.value?.trim();
-    if (n && v) values[n] = { value: parseFloat(v), unit: u||'' };
-  });
-  if (!Object.keys(values).length) { toast('请至少填写一项检测值'); return; }
-  data.labResults.push({ id: data.nextLabId++, date: document.getElementById('lab-date').value,
-    type: document.getElementById('lab-type').value, lab: document.getElementById('lab-lab').value.trim(),
-    values, note: document.getElementById('lab-note').value.trim() });
-  await patchGist(); closeModal(); renderLab();
+  if(!Object.keys(vals).length){toast('请至少填写一项检测值');return}
+  data.labResults.push({id:data.nextLabId++,date:document.getElementById('l-dt').value,
+    type:document.getElementById('l-tp').value,lab:document.getElementById('l-lb').value.trim(),
+    values:vals,note:document.getElementById('l-note').value.trim()});
+  await patchGist();closeModal();renderLab();renderSummary();
+}
+async function delLab(id){
+  if(!confirm('确认删除？'))return;
+  data.labResults=data.labResults.filter(l=>l.id!==id);
+  await patchGist();renderLab();
 }
 
-async function deleteLab(id) {
-  if (!confirm('确认删除此检测记录？')) return;
-  data.labResults = data.labResults.filter(l => l.id !== id);
-  await patchGist(); renderLab();
+// ── TAB 5: 补剂 ──────────────────────────────────────────────────────
+function renderSupps(){
+  const addBtn=`<button class="btn btn-s" style="width:100%;margin-bottom:11px" onclick="openAddSupp()">＋ 添加补剂</button>`;
+  if(!data.supplements.length){document.getElementById('supps-c').innerHTML=addBtn+`<div class="empty"><div class="ei">💊</div><p>还没有补剂<br>点击上方添加</p></div>`;return}
+  const cc={'处方药':'#e91e63','矿物质':'#ff9800','维生素':'#4caf50','中药':'#795548','其他':'#607d8b'};
+  const rows=data.supplements.map(s=>`<div class="smi">
+    <div style="width:4px;height:38px;border-radius:2px;background:${cc[s.category]||'#607d8b'};flex-shrink:0"></div>
+    <div class="smi-info"><div class="smi-name">${esc(s.name)}</div>
+      <div class="smi-detail">${esc(s.dose)} ${esc(s.unit)} · ${esc(s.category)}${s.note?' · '+esc(s.note):''}</div></div>
+    <div class="smi-act">
+      <button class="btn btn-sm btn-s" onclick="openEditSupp(${s.id})">编辑</button>
+      <button class="btn btn-sm btn-d" onclick="delSupp(${s.id})">✕</button>
+    </div></div>`).join('');
+  document.getElementById('supps-c').innerHTML=addBtn+`<div class="card">${rows}</div>`;
+}
+function suppForm(s={}){
+  const cats=['处方药','维生素','矿物质','中药','其他'];
+  return `<div class="field"><label>名称</label><input type="text" id="sf-n" value="${esc(s.name||'')}" placeholder="左甲状腺素"/></div>
+    <div class="field"><label>剂量</label><input type="text" id="sf-d" value="${esc(s.dose||'')}" placeholder="50mcg"/></div>
+    <div class="field"><label>单位</label><input type="text" id="sf-u" value="${esc(s.unit||'')}" placeholder="片"/></div>
+    <div class="field"><label>分类</label><select id="sf-c">${cats.map(c=>`<option ${c===s.category?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="field"><label>备注（可选）</label><input type="text" id="sf-note" value="${esc(s.note||'')}" placeholder="早起空腹服用"/></div>`;
+}
+function openAddSupp(){openModal('添加补剂',suppForm()+`<button class="btn btn-p" onclick="submitSupp()">保存</button>`)}
+function openEditSupp(id){const s=data.supplements.find(x=>x.id===id);if(!s)return;openModal('编辑补剂',suppForm(s)+`<button class="btn btn-p" onclick="submitSuppE(${id})">保存修改</button>`)}
+async function submitSupp(){
+  const name=document.getElementById('sf-n').value.trim();if(!name){toast('请填写名称');return}
+  const ids=data.supplements.map(s=>s.id);
+  data.supplements.push({id:ids.length?Math.max(...ids)+1:1,name,dose:document.getElementById('sf-d').value.trim(),
+    unit:document.getElementById('sf-u').value.trim(),category:document.getElementById('sf-c').value,note:document.getElementById('sf-note').value.trim()});
+  await patchGist();closeModal();renderSupps();renderToday();
+}
+async function submitSuppE(id){
+  const s=data.supplements.find(x=>x.id===id);if(!s)return;
+  const name=document.getElementById('sf-n').value.trim();if(!name){toast('请填写名称');return}
+  s.name=name;s.dose=document.getElementById('sf-d').value.trim();s.unit=document.getElementById('sf-u').value.trim();
+  s.category=document.getElementById('sf-c').value;s.note=document.getElementById('sf-note').value.trim();
+  await patchGist();closeModal();renderSupps();renderToday();
+}
+async function delSupp(id){
+  if(!confirm('删除后历史记录也会失效，确认？'))return;
+  data.supplements=data.supplements.filter(s=>s.id!==id);
+  await patchGist();renderSupps();renderToday();
 }
 
-// ── TAB 4 — 补剂 ─────────────────────────────────────────────────────
-function renderSupps() {
-  const addBtn = `<button class="btn btn-secondary" style="width:100%;margin-bottom:12px;" onclick="openAddSupp()">＋ 添加补剂</button>`;
-  if (!data.supplements.length) {
-    document.getElementById('supps-content').innerHTML = addBtn + `<div class="empty"><div class="empty-icon">💊</div><p>还没有补剂<br>点击上方添加</p></div>`;
-    return;
-  }
-  const catColor = {'处方药':'#e91e63','矿物质':'#ff9800','维生素':'#4caf50','中药':'#795548','其他':'#607d8b'};
-  const rows = data.supplements.map(s => `<div class="supp-mgmt-item">
-    <div style="width:4px;height:40px;border-radius:2px;background:${catColor[s.category]||'#607d8b'};flex-shrink:0;"></div>
-    <div class="supp-mgmt-info">
-      <div class="supp-mgmt-name">${escHtml(s.name)}</div>
-      <div class="supp-mgmt-detail">${escHtml(s.dose)} ${escHtml(s.unit)} · ${escHtml(s.category)}${s.note?' · '+escHtml(s.note):''}</div>
-    </div>
-    <div class="supp-mgmt-actions">
-      <button class="btn btn-sm btn-secondary" onclick="openEditSupp(${s.id})">编辑</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteSupp(${s.id})">✕</button>
-    </div>
-  </div>`).join('');
-  document.getElementById('supps-content').innerHTML = addBtn + `<div class="card">${rows}</div>`;
-}
-
-function suppFormHtml(s={}) {
-  const cats = ['处方药','维生素','矿物质','中药','其他'];
-  return `
-    <div class="field"><label>名称</label><input type="text" id="sf-name" value="${escHtml(s.name||'')}" placeholder="左甲状腺素" /></div>
-    <div class="field"><label>剂量</label><input type="text" id="sf-dose" value="${escHtml(s.dose||'')}" placeholder="50mcg" /></div>
-    <div class="field"><label>单位</label><input type="text" id="sf-unit" value="${escHtml(s.unit||'')}" placeholder="片" /></div>
-    <div class="field"><label>分类</label>
-      <select id="sf-cat">${cats.map(c=>`<option ${c===s.category?'selected':''}>${c}</option>`).join('')}</select>
-    </div>
-    <div class="field"><label>备注（可选）</label><input type="text" id="sf-note" value="${escHtml(s.note||'')}" placeholder="早起空腹服用" /></div>`;
-}
-
-function openAddSupp() { openModal('添加补剂', suppFormHtml() + `<button class="btn btn-primary" onclick="submitSupp()">保存</button>`); }
-function openEditSupp(id) {
-  const s = data.supplements.find(x=>x.id===id);
-  if (!s) return;
-  openModal('编辑补剂', suppFormHtml(s) + `<button class="btn btn-primary" onclick="submitSuppEdit(${id})">保存修改</button>`);
-}
-
-async function submitSupp() {
-  const name = document.getElementById('sf-name').value.trim();
-  if (!name) { toast('请填写名称'); return; }
-  const ids = data.supplements.map(s=>s.id);
-  data.supplements.push({ id: ids.length ? Math.max(...ids)+1 : 1, name,
-    dose: document.getElementById('sf-dose').value.trim(),
-    unit: document.getElementById('sf-unit').value.trim(),
-    category: document.getElementById('sf-cat').value,
-    note: document.getElementById('sf-note').value.trim() });
-  await patchGist(); closeModal(); renderSupps(); renderToday();
-}
-
-async function submitSuppEdit(id) {
-  const s = data.supplements.find(x=>x.id===id);
-  if (!s) return;
-  const name = document.getElementById('sf-name').value.trim();
-  if (!name) { toast('请填写名称'); return; }
-  s.name=name; s.dose=document.getElementById('sf-dose').value.trim();
-  s.unit=document.getElementById('sf-unit').value.trim();
-  s.category=document.getElementById('sf-cat').value;
-  s.note=document.getElementById('sf-note').value.trim();
-  await patchGist(); closeModal(); renderSupps(); renderToday();
-}
-
-async function deleteSupp(id) {
-  if (!confirm('删除后历史记录中此补剂也会失效，确认？')) return;
-  data.supplements = data.supplements.filter(s=>s.id!==id);
-  await patchGist(); renderSupps(); renderToday();
-}
-
-// ── Start ────────────────────────────────────────────────────────────
+// ── start ─────────────────────────────────────────────────────────────
 init();
 </script>
 </body>
